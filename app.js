@@ -13,7 +13,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-const GOOGLE_APP_SCRIPT_URL = "YOUR_GOOGLE_WEB_APP_URL"; // Paste the URL from Phase 1
+const GOOGLE_APP_SCRIPT_URL = https://script.google.com/macros/s/AKfycbz7YthwCWRynOV1k8s5U1_fVojBYIVHVEFIRxce1jg0NaytyH06QqR3AUD3n8aM4_c/exec; // Paste the URL from Phase 1
 
 // 2. Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
