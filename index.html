@@ -14,7 +14,7 @@
             <h1>Spirax Drive</h1>
             <div class="header-actions">
                 <button id="btn-sync" class="badge-btn" style="display:none;">Sync <span>!</span></button>
-                <button id="btn-logout" class="icon-btn">Logout</button>
+                <button id="btn-logout" class="icon-btn" style="background: transparent; color: white; border: 1px solid white;">Logout</button>
             </div>
         </div>
     </header>
@@ -22,9 +22,9 @@
     <main id="app-container">
         <section id="view-login" class="view active">
             <div class="login-card">
-                <div class="logo-area">🏢</div>
-                <h2>Welcome Back</h2>
-                <p>Please sign in to continue</p>
+                <div class="logo-area" style="font-size: 3rem; text-align: center;">🏢</div>
+                <h2 style="text-align: center;">Welcome Back</h2>
+                <p style="text-align: center;">Please sign in to continue</p>
                 <div class="input-group">
                     <input type="email" id="email" placeholder="Email Address">
                     <input type="password" id="password" placeholder="Password">
@@ -55,7 +55,7 @@
         </section>
 
         <section id="view-plants" class="view">
-            <button id="btn-back-sites" class="back-link">← Back to Sites</button>
+            <button id="btn-back-sites" class="back-link outline-btn" style="margin-bottom: 1rem;">← Back to Sites</button>
             <div class="section-header">
                 <h2 id="current-site-title">Plants</h2>
                 <p>Manage plant locations</p>
@@ -64,55 +64,53 @@
             <div class="form-card">
                 <input type="text" id="plant-name" placeholder="Plant Name (e.g. Boiler House)">
                 <input type="text" id="plant-desc" placeholder="Location Description">
-                <button id="btn-add-plant" class="secondary-btn">Add Plant to Gallery</button>
+                <button id="btn-add-plant" class="secondary-btn">+ Add Plant</button>
             </div>
 
-            <div id="plant-gallery" class="gallery-grid">
-                </div>
+            <div id="plant-gallery" class="gallery-grid"></div>
         </section>
 
         <section id="view-assets" class="view">
-    <button id="btn-back-plants" class="back-link">← Back to Plants</button>
-    
-    <div class="section-header">
-        <h2 id="asset-page-title">Plant Assets</h2>
-        <input type="text" id="search-assets" placeholder="🔍 Search existing assets...">
-    </div>
+            <button id="btn-back-plants" class="back-link outline-btn" style="margin-bottom: 1rem;">← Back to Plants</button>
+            
+            <div class="section-header">
+                <h2 id="asset-page-title">Plant Assets</h2>
+                <input type="text" id="search-assets" placeholder="🔍 Search existing assets..." style="margin-top: 0.5rem;">
+            </div>
 
-    <div class="form-card asset-form">
-        <h3>Add New Asset</h3>
-        <div class="input-group">
-            <input type="text" id="asset-name" placeholder="Asset Name (e.g. Steam Trap #1)">
-            <input type="text" id="asset-model" placeholder="Model / Serial Number">
-            <select id="asset-condition">
-                <option value="">Select Condition</option>
-                <option value="New">New</option>
-                <option value="Good">Good</option>
-                <option value="Fair">Fair</option>
-                <option value="Action Required">Action Required</option>
-            </select>
-            <input type="text" id="asset-tag" placeholder="Asset Tag ID">
-            <textarea id="asset-notes" placeholder="Additional Notes" rows="3"></textarea>
-        </div>
+            <div class="form-card asset-form">
+                <h3>Add New Asset</h3>
+                <div class="input-group">
+                    <input type="text" id="asset-name" placeholder="Asset Name (e.g. Steam Trap #1)">
+                    <input type="text" id="asset-model" placeholder="Model / Serial Number">
+                    <select id="asset-condition" style="width: 100%; padding: 0.8rem; margin-bottom: 0.8rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                        <option value="">Select Condition</option>
+                        <option value="New">New</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Action Required">Action Required</option>
+                    </select>
+                    <input type="text" id="asset-tag" placeholder="Asset Tag ID">
+                    <textarea id="asset-notes" placeholder="Additional Notes" rows="3" style="width: 100%; padding: 0.8rem; border-radius: 12px; border: 1px solid #e2e8f0;"></textarea>
+                </div>
 
-        <div class="camera-box">
-            <input type="file" id="asset-photo" accept="image/jpeg" capture="environment">
-            <label for="asset-photo" class="camera-label" id="photo-status">📷 Tap to Take Photo</label>
-        </div>
-        
-        <div class="gps-box">
-            <button id="btn-get-gps" class="outline-btn">📍 Record GPS Location</button>
-            <span id="gps-coords">No GPS Data</span>
-        </div>
+                <div class="camera-box">
+                    <input type="file" id="asset-photo" accept="image/jpeg" capture="environment">
+                    <label for="asset-photo" class="camera-label" id="photo-status">📷 Tap to Take Photo</label>
+                </div>
+                
+                <div class="gps-box" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <button id="btn-get-gps" class="outline-btn">📍 Record GPS Location</button>
+                    <span id="gps-coords" style="font-size: 0.9rem; color: #64748b;">No GPS Data</span>
+                </div>
 
-        <button id="btn-save-asset" class="primary-btn">Save Asset</button>
-    </div>
+                <button id="btn-save-asset" class="primary-btn">Save Asset</button>
+            </div>
 
-    <hr>
-    <h3>Asset Gallery</h3>
-    <div id="asset-gallery" class="gallery-list">
-        </div>
-</section>
+            <hr>
+            <h3>Asset Gallery</h3>
+            <div id="asset-gallery" class="gallery-list"></div>
+        </section>
 
     </main>
 
