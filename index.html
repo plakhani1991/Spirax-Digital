@@ -72,41 +72,48 @@
         </section>
 
         <section id="view-assets" class="view">
-            <button id="btn-back-plants" class="back-link">← Back to Plants</button>
-            
-            <div class="sticky-search">
-                <input type="text" id="search-assets" placeholder="🔍 Search assets in this plant...">
-            </div>
+    <button id="btn-back-plants" class="back-link">← Back to Plants</button>
+    
+    <div class="section-header">
+        <h2 id="asset-page-title">Plant Assets</h2>
+        <input type="text" id="search-assets" placeholder="🔍 Search existing assets...">
+    </div>
 
-            <div class="asset-type-scroller">
-                <button class="type-pill active">All</button>
-                <button class="type-pill">Boiler</button>
-                <button class="type-pill">Pump</button>
-                <button class="type-pill">Valve</button>
-                <button class="type-pill">Trap</button>
-                <button class="type-pill">Meter</button>
-            </div>
+    <div class="form-card asset-form">
+        <h3>Add New Asset</h3>
+        <div class="input-group">
+            <input type="text" id="asset-name" placeholder="Asset Name (e.g. Steam Trap #1)">
+            <input type="text" id="asset-model" placeholder="Model / Serial Number">
+            <select id="asset-condition">
+                <option value="">Select Condition</option>
+                <option value="New">New</option>
+                <option value="Good">Good</option>
+                <option value="Fair">Fair</option>
+                <option value="Action Required">Action Required</option>
+            </select>
+            <input type="text" id="asset-tag" placeholder="Asset Tag ID">
+            <textarea id="asset-notes" placeholder="Additional Notes" rows="3"></textarea>
+        </div>
 
-            <div class="form-card asset-form">
-                <h3>Capture Asset</h3>
-                <div class="camera-box">
-                    <input type="file" id="asset-photo" accept="image/jpeg" capture="environment">
-                    <label for="asset-photo" class="camera-label">
-                        <span>📷 Tap to Take Photo</span>
-                    </label>
-                </div>
-                
-                <div class="gps-box">
-                    <button id="btn-get-gps" class="outline-btn">📍 Tag Location</button>
-                    <span id="gps-coords">No GPS Data</span>
-                </div>
+        <div class="camera-box">
+            <input type="file" id="asset-photo" accept="image/jpeg" capture="environment">
+            <label for="asset-photo" class="camera-label" id="photo-status">📷 Tap to Take Photo</label>
+        </div>
+        
+        <div class="gps-box">
+            <button id="btn-get-gps" class="outline-btn">📍 Record GPS Location</button>
+            <span id="gps-coords">No GPS Data</span>
+        </div>
 
-                <button id="btn-save-asset" class="primary-btn">Save Asset</button>
-            </div>
+        <button id="btn-save-asset" class="primary-btn">Save Asset</button>
+    </div>
 
-            <div id="asset-gallery" class="gallery-list">
-                </div>
-        </section>
+    <hr>
+    <h3>Asset Gallery</h3>
+    <div id="asset-gallery" class="gallery-list">
+        </div>
+</section>
+
     </main>
 
     <script type="module" src="app.js"></script>
