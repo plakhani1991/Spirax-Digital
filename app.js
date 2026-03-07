@@ -1,16 +1,14 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-// --- 1. PWA SERVICE WORKER REGISTRATION ---
+// --- PWA SERVICE WORKER ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-            .then(() => console.log('PWA Service Worker Active'))
-            .catch(err => console.error('SW registration failed', err));
+        navigator.serviceWorker.register('./sw.js').catch(err => console.error(err));
     });
 }
 
-// --- 2. CONFIGURATION ---
+// --- FIREBASE CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyCnfM942zYXkIorG2z9VtOJ56YorfK5_Zk",
     authDomain: "spirax-drive.firebaseapp.com",
@@ -19,321 +17,399 @@ const firebaseConfig = {
     messagingSenderId: "654602657737",
     appId: "1:654602657737:web:819eb168931cb2258c1218"
 };
-
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7YthwCWRynOV1k8s5U1_fVojBYIVHVEFIRxce1jg0NaytyH06QqR3AUD3n8aM4_c/exec";
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7YthwCWRynOV1k8s5U1_fVojBYIVHVEFIRxce1jg0NaytyH06QqR3AUD3yQfCg7qU/exec";
 
-// --- 3. STATE MANAGEMENT ---
-let localDB = JSON.parse(localStorage.getItem('spiraxLocalDB')) || {};
+// --- STATE ---
+let localSites = JSON.parse(localStorage.getItem('localSites')) || [];
 let activeSiteId = null;
 let activePlantId = null;
+let temporaryAssetImages = []; // Holds arrays of base64 images while creating/editing an asset
 
-function saveLocalDB() {
-    localStorage.setItem('spiraxLocalDB', JSON.stringify(localDB));
-}
+// --- DOM ELEMENTS ---
+const btnLogout = document.getElementById('btn-logout');
+const btnGlobalPush = document.getElementById('btn-global-push');
+const progressBarContainer = document.getElementById('progress-container');
+const progressBar = document.getElementById('progress-bar');
+const imageModal = document.getElementById('image-modal');
+const expandedImg = document.getElementById('expanded-img');
 
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2);
-}
-
-// --- 4. API CALLER (Connection Fix Applied) ---
-async function callAPI(action, payload = {}) {
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'cors',
-            redirect: 'follow', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action, payload })
-        });
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        const result = await response.json();
-        if (result.status === 'error') throw new Error(result.message);
-        return result;
-    } catch (e) {
-        console.error("API Error:", e);
-        return { status: "error", message: e.message || "Connection lost." };
+// --- AUTHENTICATION OBSERVER ---
+onAuthStateChanged(auth, user => {
+    if (user) {
+        // Logged in: show header buttons
+        btnLogout.style.display = 'block';
+        btnGlobalPush.style.display = 'block';
+        showView('view-home');
+        renderLocalSites();
+    } else {
+        // Logged out: hide header buttons completely
+        btnLogout.style.display = 'none';
+        btnGlobalPush.style.display = 'none';
+        showView('view-login');
     }
-}
-
-// --- 5. AUTH & NAVIGATION ---
-onAuthStateChanged(auth, (user) => {
-    if (user) { renderHome(); } else { showView('view-login'); }
 });
 
-function showView(id) {
+document.getElementById('btn-login').addEventListener('click', () => {
+    const e = document.getElementById('email').value, p = document.getElementById('password').value;
+    signInWithEmailAndPassword(auth, e, p).catch(err => alert("Login Failed: " + err.message));
+});
+
+btnLogout.addEventListener('click', () => signOut(auth));
+
+// --- NAVIGATION ---
+function showView(viewId) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    window.scrollTo(0,0);
+    document.getElementById(viewId).classList.add('active');
+    window.scrollTo(0, 0);
 }
 
-document.getElementById('btn-login').onclick = () => {
-    const email = document.getElementById('email').value;
-    const pass = document.getElementById('password').value;
-    signInWithEmailAndPassword(auth, email, pass).catch(err => alert(err.message));
-};
+document.querySelectorAll('.nav-home').forEach(btn => {
+    btn.addEventListener('click', () => {
+        showView('view-home');
+        renderLocalSites();
+    });
+});
 
-document.getElementById('btn-logout').onclick = () => signOut(auth);
-document.querySelectorAll('.nav-home').forEach(btn => btn.onclick = renderHome);
-
-// --- 6. HOME DASHBOARD ---
-function renderHome() {
-    showView('view-home');
-    const list = document.getElementById('local-site-list');
-    list.innerHTML = '';
-    
-    if (Object.keys(localDB).length === 0) {
-        list.innerHTML = '<li class="empty-msg">No local sites. Create one or sync from cloud.</li>';
-    } else {
-        for (const siteId in localDB) {
-            const site = localDB[siteId];
-            const li = document.createElement('li');
-            li.innerHTML = `<strong>${site.name}</strong><br><small>${site.city}</small>`;
-            li.onclick = () => openSite(siteId);
-            list.appendChild(li);
-        }
-    }
-}
-
-document.getElementById('nav-create-site').onclick = () => showView('view-create-site');
-document.getElementById('nav-sync-sites').onclick = loadCloudSites;
-
-// --- 7. CREATE SITE (IMMEDIATE CLOUD PUSH) ---
-document.getElementById('btn-save-new-site').onclick = async () => {
-    const name = document.getElementById('new-site-name').value;
-    const city = document.getElementById('new-site-city').value;
-    if (!name || !city) return alert("Please fill in both fields.");
-    
-    const btn = document.getElementById('btn-save-new-site');
-    btn.innerText = "Creating Site in Cloud...";
-    btn.disabled = true;
-
-    const res = await callAPI('createSite', { siteName: name, siteCity: city });
-    
-    if (res.status === 'success') {
-        const siteId = `${name}_${city}`.replace(/\s+/g, '');
-        localDB[siteId] = res.siteData; 
-        saveLocalDB();
-        openSite(siteId);
-    } else {
-        alert("Error creating site: " + res.message);
-    }
-    
-    btn.innerText = "Save & Continue";
-    btn.disabled = false;
-};
-
-// --- 8. SYNC EXISTING SITES ---
-async function loadCloudSites() {
+document.getElementById('nav-create-site').addEventListener('click', () => showView('view-create-site'));
+document.getElementById('nav-sync-sites').addEventListener('click', () => {
     showView('view-sync-sites');
-    const list = document.getElementById('cloud-site-list');
-    list.innerHTML = '<li>Connecting to cloud...</li>';
-    
-    const res = await callAPI('getSitesList');
-    if (res.status === 'success') {
-        list.innerHTML = '';
-        res.data.reverse().forEach(site => {
-            const li = document.createElement('li');
-            li.innerHTML = `<strong>${site.name}</strong><br><small>${site.city}</small>`;
-            li.onclick = () => downloadSiteData(site.name, site.city);
-            list.appendChild(li);
-        });
-    } else {
-        list.innerHTML = `<li>Error: ${res.message}</li>`;
-    }
-}
+    fetchCloudSites();
+});
 
-async function downloadSiteData(name, city) {
-    const res = await callAPI('downloadSiteData', { siteName: name, siteCity: city });
-    if (res.status === 'success') {
-        const siteId = `${name}_${city}`.replace(/\s+/g, '');
-        localDB[siteId] = res.data; 
-        saveLocalDB();
-        openSite(siteId);
-    } else {
-        alert("Download failed: " + res.message);
-    }
-}
-
-// --- 9. PLANTS MANAGEMENT ---
-function openSite(siteId) {
-    activeSiteId = siteId;
-    const site = localDB[siteId];
-    document.getElementById('current-site-title').innerText = site.name;
-    document.getElementById('current-site-city').innerText = site.city;
+document.getElementById('btn-back-to-plants').addEventListener('click', () => {
     showView('view-plants');
     renderPlants();
-}
+});
 
-function renderPlants() {
-    const gallery = document.getElementById('plant-gallery');
-    gallery.innerHTML = '';
-    const plants = localDB[activeSiteId].plants;
+document.querySelectorAll('.btn-cancel-asset').forEach(btn => {
+    btn.addEventListener('click', () => {
+        showView('view-assets');
+    });
+});
 
-    for (const plantId in plants) {
-        const div = document.createElement('div');
-        div.className = 'plant-card';
-        div.innerHTML = `<h3>${plants[plantId].name}</h3><p>${plants[plantId].assets.length} assets</p>`;
-        div.onclick = () => openPlant(plantId);
-        gallery.appendChild(div);
-    }
-}
-
-document.getElementById('btn-add-plant').onclick = () => {
-    const name = document.getElementById('new-plant-name').value;
-    if (!name) return alert("Enter plant name");
+// --- GLOBAL PUSH TO CLOUD ---
+btnGlobalPush.addEventListener('click', async () => {
+    if (localSites.length === 0) return alert("No local sites to push.");
     
-    const plantId = 'plant_' + generateId();
-    localDB[activeSiteId].plants[plantId] = { id: plantId, name: name, assets: [] };
-    saveLocalDB();
-    document.getElementById('new-plant-name').value = '';
-    renderPlants();
-};
+    progressBarContainer.style.display = 'block';
+    let successCount = 0;
 
-// --- 10. PUSH DATA TO CLOUD (MERGE MODE) ---
-document.getElementById('btn-push-cloud').onclick = async () => {
-    const btn = document.getElementById('btn-push-cloud');
-    const site = localDB[activeSiteId];
-    
-    btn.innerText = "Merging with Cloud...";
-    btn.disabled = true;
-
-    const res = await callAPI('pushSiteData', { siteName: site.name, siteCity: site.city, siteData: site });
-    
-    if (res.status === 'success') {
-        // Overwrite local with the merged cloud version to see other users' work
-        localDB[activeSiteId] = res.data; 
-        saveLocalDB();
-        alert("Sync Successful! Data merged with cloud.");
-        renderPlants();
-    } else {
-        alert("Push failed: " + res.message);
+    for (let i = 0; i < localSites.length; i++) {
+        let site = localSites[i];
+        progressBar.style.width = `${((i) / localSites.length) * 100}%`;
+        
+        try {
+            await googleScriptAction('pushSiteData', {
+                siteName: site.name,
+                siteCity: site.city,
+                siteData: site
+            });
+            successCount++;
+        } catch(e) {
+            console.error("Failed to push site:", site.name, e);
+        }
     }
     
-    btn.innerText = "☁️ Push to Cloud";
-    btn.disabled = false;
-};
+    progressBar.style.width = '100%';
+    setTimeout(() => {
+        progressBarContainer.style.display = 'none';
+        progressBar.style.width = '0%';
+        alert(`Push complete! Successfully synced ${successCount} of ${localSites.length} sites.`);
+    }, 500);
+});
 
-// --- 11. ASSETS GALLERY ---
-function openPlant(plantId) {
-    activePlantId = plantId;
-    document.getElementById('current-plant-title').innerText = `${localDB[activeSiteId].plants[plantId].name} Assets`;
-    showView('view-assets');
-    renderAssets();
+// --- GOOGLE SCRIPT HELPER ---
+async function googleScriptAction(action, payload = {}) {
+    const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action, payload })
+    });
+    return await res.json();
 }
-document.getElementById('btn-back-to-plants').onclick = () => showView('view-plants');
 
-function renderAssets() {
-    const list = document.getElementById('asset-gallery');
-    list.innerHTML = '';
-    const assets = localDB[activeSiteId].plants[activePlantId].assets;
+// --- LOCAL DATA MANAGEMENT ---
+function saveLocalDB() {
+    localStorage.setItem('localSites', JSON.stringify(localSites));
+}
 
-    if (assets.length === 0) {
-        list.innerHTML = '<p style="text-align:center; color:#64748b;">No assets in this plant.</p>';
-        return;
-    }
+function renderLocalSites() {
+    const ul = document.getElementById('local-site-list');
+    ul.innerHTML = '';
+    localSites.forEach((site, index) => {
+        const li = document.createElement('li');
+        
+        const infoDiv = document.createElement('div');
+        infoDiv.innerHTML = `<strong>${site.name}</strong><br><small>${site.city}</small>`;
+        infoDiv.style.cursor = 'pointer';
+        infoDiv.onclick = () => {
+            activeSiteId = site.id;
+            showView('view-plants');
+            renderPlants();
+        };
 
-    assets.forEach(asset => {
-        const div = document.createElement('div');
-        div.className = 'form-card asset-list-item';
-        div.style.cursor = 'pointer';
-        div.innerHTML = `<strong>${asset.name}</strong><br><small>${asset.condition} | ${asset.model || 'No model'}</small>`;
-        div.onclick = () => openAssetForm(asset);
-        list.appendChild(div);
+        const actionDiv = document.createElement('div');
+        actionDiv.className = 'list-actions';
+        
+        // Sync Button (Pushes just this site)
+        const btnSync = document.createElement('button');
+        btnSync.className = 'sync-btn';
+        btnSync.innerText = 'Sync';
+        btnSync.onclick = async (e) => {
+            e.stopPropagation();
+            btnSync.innerText = '...';
+            try {
+                await googleScriptAction('pushSiteData', { siteName: site.name, siteCity: site.city, siteData: site });
+                alert("Site Synced Successfully!");
+            } catch (err) { alert("Sync failed."); }
+            btnSync.innerText = 'Sync';
+        };
+
+        // Hide Button (Deletes locally)
+        const btnHide = document.createElement('button');
+        btnHide.className = 'hide-btn';
+        btnHide.innerText = 'Hide';
+        btnHide.onclick = (e) => {
+            e.stopPropagation();
+            if(confirm(`Remove ${site.name} from local device? Cloud data will NOT be deleted.`)) {
+                localSites.splice(index, 1);
+                saveLocalDB();
+                renderLocalSites();
+            }
+        };
+
+        actionDiv.appendChild(btnSync);
+        actionDiv.appendChild(btnHide);
+        
+        li.appendChild(infoDiv);
+        li.appendChild(actionDiv);
+        ul.appendChild(li);
     });
 }
 
-// --- 12. ASSET FORM (CREATE/EDIT) ---
-document.getElementById('btn-create-asset').onclick = () => openAssetForm(null);
-document.getElementById('btn-cancel-asset').onclick = () => showView('view-assets');
+// --- NEW SITE CREATION ---
+document.getElementById('btn-save-new-site').addEventListener('click', () => {
+    const name = document.getElementById('new-site-name').value;
+    const city = document.getElementById('new-site-city').value;
+    if (!name || !city) return alert("Fill all fields");
 
-function openAssetForm(asset) {
-    showView('view-asset-form');
-    document.getElementById('asset-photo').value = '';
+    const newSite = { id: Date.now().toString(), name, city, plants: {} };
+    localSites.push(newSite);
+    saveLocalDB();
     
-    if (asset) {
-        document.getElementById('asset-form-title').innerText = 'Edit Asset';
-        document.getElementById('asset-id').value = asset.id;
-        document.getElementById('asset-name').value = asset.name || '';
-        document.getElementById('asset-model').value = asset.model || '';
-        document.getElementById('asset-condition').value = asset.condition || '';
-        document.getElementById('asset-tag').value = asset.tag || '';
-        document.getElementById('asset-notes').value = asset.notes || '';
-        document.getElementById('gps-coords').innerText = asset.lat ? `${asset.lat}, ${asset.lng}` : "No GPS Data";
-        document.getElementById('gps-coords').dataset.lat = asset.lat || "";
-        document.getElementById('gps-coords').dataset.lng = asset.lng || "";
-        document.getElementById('photo-status').innerText = (asset.localImage || asset.imageRef) ? "📷 Image Attached (Tap to replace)" : "📷 Tap to Take Photo";
-    } else {
-        document.getElementById('asset-form-title').innerText = 'New Asset';
-        document.getElementById('asset-id').value = '';
-        ['asset-name', 'asset-model', 'asset-condition', 'asset-tag', 'asset-notes'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('gps-coords').innerText = "No GPS Data";
-        document.getElementById('gps-coords').dataset.lat = "";
-        document.getElementById('photo-status').innerText = "📷 Tap to Take Photo";
+    // Auto push basic site structure to cloud
+    googleScriptAction('createSite', { siteName: name, siteCity: city });
+    
+    document.getElementById('new-site-name').value = '';
+    document.getElementById('new-site-city').value = '';
+    showView('view-home');
+    renderLocalSites();
+});
+
+// --- CLOUD SITES DOWNLOAD ---
+async function fetchCloudSites() {
+    const ul = document.getElementById('cloud-site-list');
+    ul.innerHTML = '<li>Loading cloud sites...</li>';
+    const res = await googleScriptAction('getSitesList');
+    ul.innerHTML = '';
+    res.data.forEach(site => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${site.name}</strong><br><small>${site.city}</small>`;
+        li.onclick = async () => {
+            li.innerHTML += ' (Downloading...)';
+            const dlRes = await googleScriptAction('downloadSiteData', { siteName: site.name, siteCity: site.city });
+            const data = dlRes.data;
+            data.id = Date.now().toString(); 
+            localSites.push(data);
+            saveLocalDB();
+            alert("Site Downloaded!");
+            showView('view-home');
+            renderLocalSites();
+        };
+        ul.appendChild(li);
+    });
+}
+
+// --- PLANTS LOGIC ---
+function renderPlants() {
+    const site = localSites.find(s => s.id === activeSiteId);
+    document.getElementById('current-site-title').innerText = site.name;
+    document.getElementById('current-site-city').innerText = site.city;
+    
+    const gallery = document.getElementById('plant-gallery');
+    gallery.innerHTML = '';
+    for (const pId in site.plants) {
+        const plant = site.plants[pId];
+        const card = document.createElement('div');
+        card.className = 'plant-card';
+        card.innerHTML = `<h3>${plant.name}</h3><p>${plant.assets ? plant.assets.length : 0} Assets</p>`;
+        card.onclick = () => {
+            activePlantId = pId;
+            showView('view-assets');
+            renderAssets();
+        };
+        gallery.appendChild(card);
     }
 }
 
-document.getElementById('btn-get-gps').onclick = () => {
-    navigator.geolocation.getCurrentPosition(p => {
-        const coords = document.getElementById('gps-coords');
-        coords.innerText = `${p.coords.latitude.toFixed(4)}, ${p.coords.longitude.toFixed(4)}`;
-        coords.dataset.lat = p.coords.latitude;
-        coords.dataset.lng = p.coords.longitude;
-    }, () => alert("Could not access GPS. Check permissions."));
-};
-
-document.getElementById('btn-save-asset').onclick = async () => {
-    const name = document.getElementById('asset-name').value;
-    if (!name) return alert("Asset Name is required.");
-
-    const btn = document.getElementById('btn-save-asset');
-    btn.disabled = true;
-
-    let assetId = document.getElementById('asset-id').value || generateId();
-    const photoFile = document.getElementById('asset-photo').files[0];
-    const gps = document.getElementById('gps-coords').dataset;
-
-    let localImageBase64 = null;
-    if (photoFile) {
-        localImageBase64 = await compressImage(photoFile, 1200, 0.7);
-    }
-
-    const assetObj = {
-        id: assetId,
-        name,
-        model: document.getElementById('asset-model').value,
-        condition: document.getElementById('asset-condition').value,
-        tag: document.getElementById('asset-tag').value,
-        notes: document.getElementById('asset-notes').value,
-        lat: gps.lat || "",
-        lng: gps.lng || "",
-    };
-
-    const assetsArray = localDB[activeSiteId].plants[activePlantId].assets;
-    const existingIndex = assetsArray.findIndex(a => a.id === assetId);
-
-    if (existingIndex > -1) {
-        if (!localImageBase64) {
-            assetObj.localImage = assetsArray[existingIndex].localImage;
-            assetObj.imageRef = assetsArray[existingIndex].imageRef;
-        } else {
-            assetObj.localImage = localImageBase64;
-        }
-        assetsArray[existingIndex] = assetObj;
-    } else {
-        if (localImageBase64) assetObj.localImage = localImageBase64;
-        assetsArray.push(assetObj);
-    }
-
+document.getElementById('btn-add-plant').addEventListener('click', () => {
+    const name = document.getElementById('new-plant-name').value;
+    if (!name) return;
+    const site = localSites.find(s => s.id === activeSiteId);
+    const pId = 'P_' + Date.now();
+    site.plants[pId] = { id: pId, name, assets: [] };
     saveLocalDB();
-    btn.disabled = false;
-    showView('view-assets');
-    renderAssets();
-};
+    document.getElementById('new-plant-name').value = '';
+    renderPlants();
+});
 
-// --- 13. IMAGE PROCESSING HELPER ---
+// --- ASSET ROUTING ---
+function renderAssets() {
+    const site = localSites.find(s => s.id === activeSiteId);
+    const plant = site.plants[activePlantId];
+    document.getElementById('current-plant-title').innerText = `${plant.name} Assets`;
+    
+    const gallery = document.getElementById('asset-gallery');
+    gallery.innerHTML = '';
+    
+    if (!plant.assets || plant.assets.length === 0) {
+        gallery.innerHTML = '<p style="color: gray;">No assets added yet.</p>';
+        return;
+    }
+
+    plant.assets.forEach(asset => {
+        const card = document.createElement('div');
+        card.className = 'asset-card';
+        // Check for multiple local images or cloud URLs
+        let thumbSrc = 'https://via.placeholder.com/150';
+        if (asset.localImages && asset.localImages.length > 0) thumbSrc = "data:image/jpeg;base64," + asset.localImages[0];
+        else if (asset.imageRefs && asset.imageRefs.length > 0) thumbSrc = asset.imageRefs[0];
+
+        card.innerHTML = `
+            <img src="${thumbSrc}" style="width:100%; height:100px; object-fit:cover; border-radius:8px;">
+            <h4 style="margin: 0.5rem 0;">${asset.name}</h4>
+            <span style="font-size:0.8rem; background:#e2e8f0; padding:2px 6px; border-radius:4px;">${asset.type}</span>
+        `;
+        gallery.appendChild(card);
+    });
+}
+
+// 4 Asset Buttons trigger opening forms
+document.getElementById('btn-add-steam').onclick = () => openAssetForm('view-asset-steam');
+document.getElementById('btn-add-flow').onclick = () => openAssetForm('view-asset-flow');
+document.getElementById('btn-add-ccd').onclick = () => openAssetForm('view-asset-ccd');
+document.getElementById('btn-add-dcc').onclick = () => openAssetForm('view-asset-dcc');
+
+function openAssetForm(viewId) {
+    temporaryAssetImages = []; // Reset images for new asset
+    document.querySelectorAll('.image-preview-gallery').forEach(el => el.innerHTML = ''); // clear previews
+    // Clear inputs in that specific view
+    const view = document.getElementById(viewId);
+    view.querySelectorAll('input').forEach(input => {
+        if(input.type !== 'file' && input.type !== 'button') input.value = '';
+    });
+    showView(viewId);
+}
+
+// --- MULTIPLE IMAGES HANDLING ---
+document.querySelectorAll('.asset-photo-input').forEach(input => {
+    input.addEventListener('change', async (e) => {
+        const files = e.target.files;
+        for (let i = 0; i < files.length; i++) {
+            const base64 = await compressImage(files[i], 800, 0.7);
+            temporaryAssetImages.push(base64);
+        }
+        // Find the preview gallery in the closest form
+        const gallery = e.target.closest('.multi-image-container').querySelector('.image-preview-gallery');
+        renderImageThumbnails(gallery);
+    });
+});
+
+function renderImageThumbnails(galleryElement) {
+    galleryElement.innerHTML = '';
+    temporaryAssetImages.forEach((img64, index) => {
+        const container = document.createElement('div');
+        container.className = 'img-thumb-container';
+        
+        const img = document.createElement('img');
+        img.className = 'img-thumb';
+        img.src = "data:image/jpeg;base64," + img64;
+        img.onclick = () => openLightbox(img.src);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-img-btn';
+        delBtn.innerHTML = '×';
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            temporaryAssetImages.splice(index, 1);
+            renderImageThumbnails(galleryElement);
+        };
+
+        container.appendChild(img);
+        container.appendChild(delBtn);
+        galleryElement.appendChild(container);
+    });
+}
+
+// --- LIGHTBOX MODAL ---
+function openLightbox(src) {
+    imageModal.style.display = "block";
+    expandedImg.src = src;
+}
+document.getElementById('close-modal').onclick = () => imageModal.style.display = "none";
+window.onclick = (event) => {
+    if (event.target == imageModal) imageModal.style.display = "none";
+}
+
+// --- SAVING SPECIFIC ASSETS ---
+document.querySelectorAll('.btn-save-specific-asset').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const type = e.target.getAttribute('data-type');
+        let prefix = type === "Steam Insight" ? "steam" : type === "Flow Meter" ? "flow" : type.toLowerCase();
+        
+        const idInput = document.getElementById(`${prefix}-id`).value || Date.now().toString();
+        const name = document.getElementById(`${prefix}-name`).value;
+        const tag = document.getElementById(`${prefix}-tag`).value;
+        if (!name) return alert("Asset Name is required.");
+
+        // Build base object
+        const assetObj = {
+            id: idInput,
+            type: type,
+            name: name,
+            tag: tag,
+            localImages: temporaryAssetImages // attach array of images
+        };
+
+        // Attach dummy specific fields based on type
+        if (type === "Steam Insight") {
+            assetObj.pressure = document.getElementById('steam-pressure').value;
+            assetObj.temp = document.getElementById('steam-temp').value;
+        } else if (type === "Flow Meter") {
+            assetObj.pipeSize = document.getElementById('flow-pipesize').value;
+            assetObj.fluid = document.getElementById('flow-fluid').value;
+        } else if (type === "CCD") {
+            assetObj.pump = document.getElementById('ccd-pump').value;
+            assetObj.rating = document.getElementById('ccd-rating').value;
+        } else if (type === "DCC") {
+            assetObj.voltage = document.getElementById('dcc-voltage').value;
+            assetObj.signal = document.getElementById('dcc-signal').value;
+        }
+
+        // Save to Local DB
+        const site = localSites.find(s => s.id === activeSiteId);
+        const plant = site.plants[activePlantId];
+        if(!plant.assets) plant.assets = [];
+        plant.assets.push(assetObj);
+        saveLocalDB();
+        
+        showView('view-assets');
+        renderAssets();
+    });
+});
+
+// --- IMAGE COMPRESSOR HELPER ---
 function compressImage(file, maxWidth, quality) {
     return new Promise((resolve) => {
         const reader = new FileReader();
