@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset PWA</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <header>
+        <h1>Field Manager</h1>
+        <button id="btn-sync" style="display:none;">Sync Offline Data</button>
+        <button id="btn-logout" style="display:none;">Logout</button>
+    </header>
+
+    <main>
+        <section id="view-login" class="view active">
+            <h2>Login</h2>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button id="btn-login">Login</button>
+        </section>
+
+        <section id="view-sites" class="view" style="display:none;">
+            <h2>Sites</h2>
+            <div class="form-group">
+                <h3>Create New Site</h3>
+                <input type="text" id="site-name" placeholder="Site Name">
+                <input type="text" id="site-city" placeholder="Site City">
+                <button id="btn-create-site">Create Site</button>
+            </div>
+            <hr>
+            <h3>Existing Sites</h3>
+            <ul id="site-list"></ul>
+        </section>
+
+        <section id="view-plants" class="view" style="display:none;">
+            <button id="btn-back-sites">Back to Sites</button>
+            <h2>Plants</h2>
+            <div class="form-group">
+                <input type="text" id="plant-name" placeholder="Plant Name">
+                <input type="text" id="plant-desc" placeholder="Location Description">
+                <button id="btn-add-plant">Add Plant</button>
+            </div>
+            <div class="gallery" id="plant-gallery"></div>
+        </section>
+
+        <section id="view-assets" class="view" style="display:none;">
+            <button id="btn-back-plants">Back to Plants</button>
+            <h2>Assets</h2>
+            <input type="text" id="search-assets" placeholder="Search assets...">
+            
+            <div class="asset-types-header">
+                <button>Type 1</button> <button>Type 2</button> <button>Type 3</button>
+                <button>Type 4</button> <button>Type 5</button>
+            </div>
+
+            <div class="form-group">
+                <h3>Add New Asset</h3>
+                <button id="btn-get-gps">Get GPS Location</button>
+                <span id="gps-coords"></span>
+                <input type="file" id="asset-photo" accept="image/jpeg">
+                <button id="btn-save-asset">Save Asset</button>
+            </div>
+            
+            <div class="gallery" id="asset-gallery"></div>
+        </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
