@@ -1,12 +1,3 @@
-// In app.js
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registered', reg))
-      .catch(err => console.error('Service Worker registration failed', err));
-  });
-}
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
@@ -35,7 +26,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // --- 3. STATE MANAGEMENT ---
-// Structure: { "SiteName_City": { name, city, plants: { "PlantID": { name, assets: [] } } } }
 let localDB = JSON.parse(localStorage.getItem('spiraxLocalDB')) || {};
 let activeSiteId = null;
 let activePlantId = null;
@@ -54,15 +44,17 @@ async function callAPI(action, payload = {}) {
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'cors',
-            redirect: 'follow', // Essential for Google Apps Script redirects
+            redirect: 'follow', 
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action, payload })
         });
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return await response.json();
+        const result = await response.json();
+        if (result.status === 'error') throw new Error(result.message);
+        return result;
     } catch (e) {
         console.error("API Error:", e);
-        return { status: "error", message: "Connection lost. Ensure you are online and using a valid deployment." };
+        return { status: "error", message: e.message || "Connection lost." };
     }
 }
 
@@ -122,7 +114,7 @@ document.getElementById('btn-save-new-site').onclick = async () => {
     
     if (res.status === 'success') {
         const siteId = `${name}_${city}`.replace(/\s+/g, '');
-        localDB[siteId] = res.siteData; // Site data structure from server
+        localDB[siteId] = res.siteData; 
         saveLocalDB();
         openSite(siteId);
     } else {
@@ -200,20 +192,21 @@ document.getElementById('btn-add-plant').onclick = () => {
     renderPlants();
 };
 
-// --- 10. PUSH DATA TO CLOUD ---
+// --- 10. PUSH DATA TO CLOUD (MERGE MODE) ---
 document.getElementById('btn-push-cloud').onclick = async () => {
     const btn = document.getElementById('btn-push-cloud');
     const site = localDB[activeSiteId];
     
-    btn.innerText = "Syncing...";
+    btn.innerText = "Merging with Cloud...";
     btn.disabled = true;
 
     const res = await callAPI('pushSiteData', { siteName: site.name, siteCity: site.city, siteData: site });
     
     if (res.status === 'success') {
-        localDB[activeSiteId] = res.data; // Update local storage with remote Drive image URLs
+        // Overwrite local with the merged cloud version to see other users' work
+        localDB[activeSiteId] = res.data; 
         saveLocalDB();
-        alert("Success! All data and images pushed to cloud.");
+        alert("Sync Successful! Data merged with cloud.");
         renderPlants();
     } else {
         alert("Push failed: " + res.message);
@@ -322,7 +315,6 @@ document.getElementById('btn-save-asset').onclick = async () => {
     const existingIndex = assetsArray.findIndex(a => a.id === assetId);
 
     if (existingIndex > -1) {
-        // Edit existing
         if (!localImageBase64) {
             assetObj.localImage = assetsArray[existingIndex].localImage;
             assetObj.imageRef = assetsArray[existingIndex].imageRef;
@@ -331,7 +323,6 @@ document.getElementById('btn-save-asset').onclick = async () => {
         }
         assetsArray[existingIndex] = assetObj;
     } else {
-        // Create new
         if (localImageBase64) assetObj.localImage = localImageBase64;
         assetsArray.push(assetObj);
     }
