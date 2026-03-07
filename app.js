@@ -3,10 +3,12 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from
 
 // 1. Configs
 const firebaseConfig = {
-  // PASTE YOUR FIREBASE CONFIG HERE
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT",
+    apiKey: "AIzaSyCnfM942zYXkIorG2z9VtOJ56YorfK5_Zk",
+    authDomain: "spirax-drive.firebaseapp.com",
+    projectId: "spirax-drive",
+    storageBucket: "spirax-drive.firebasestorage.app",
+    messagingSenderId: "654602657737",
+    appId: "1:654602657737:web:819eb168931cb2258c1218"
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
