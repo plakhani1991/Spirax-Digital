@@ -156,3 +156,29 @@ input:focus { outline: 2px solid var(--primary); border-color: transparent; }
     justify-content: space-between;
     align-items: center;
 }
+
+/* Append to existing styles.css */
+.gallery-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.gallery-list .form-card {
+    margin-bottom: 0;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.gallery-list .form-card:hover {
+    border-color: var(--primary);
+}
+
+.styled-list li {
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.styled-list li:hover {
+    border-color: var(--primary);
+}
