@@ -13,7 +13,6 @@
         <div class="header-content">
             <h1>Spirax Drive</h1>
             <div class="header-actions">
-                <button id="btn-sync" class="badge-btn" style="display:none;">Sync <span>!</span></button>
                 <button id="btn-logout" class="icon-btn" style="background: transparent; color: white; border: 1px solid white;">Logout</button>
             </div>
         </div>
@@ -24,7 +23,6 @@
             <div class="login-card">
                 <div class="logo-area" style="font-size: 3rem; text-align: center;">🏢</div>
                 <h2 style="text-align: center;">Welcome Back</h2>
-                <p style="text-align: center;">Please sign in to continue</p>
                 <div class="input-group">
                     <input type="email" id="email" placeholder="Email Address">
                     <input type="password" id="password" placeholder="Password">
@@ -33,55 +31,71 @@
             </div>
         </section>
 
-        <section id="view-sites" class="view">
+        <section id="view-home" class="view">
             <div class="section-header">
-                <h2>Project Sites</h2>
-                <p>Select a site or create a new one</p>
+                <h2>Dashboard</h2>
+                <p>Choose an action to begin</p>
             </div>
+            <button id="nav-create-site" class="primary-btn" style="margin-bottom: 1rem; padding: 1.5rem;">+ Create New Local Site</button>
+            <button id="nav-sync-sites" class="secondary-btn" style="width: 100%; padding: 1.5rem;">☁️ Sync Existing Site</button>
             
-            <div class="form-card">
-                <h3>New Site</h3>
-                <div class="input-row">
-                    <input type="text" id="site-name" placeholder="Site Name">
-                    <input type="text" id="site-city" placeholder="City">
-                </div>
-                <button id="btn-create-site" class="secondary-btn">+ Create Site</button>
-            </div>
+            <h3 style="margin-top: 2rem;">Local Offline Sites</h3>
+            <ul id="local-site-list" class="styled-list"></ul>
+        </section>
 
-            <div class="list-container">
-                <h3>Existing Sites</h3>
-                <ul id="site-list" class="styled-list"></ul>
+        <section id="view-create-site" class="view">
+            <button class="back-link outline-btn nav-home" style="margin-bottom: 1rem;">← Cancel</button>
+            <div class="form-card">
+                <h3>New Local Site</h3>
+                <input type="text" id="new-site-name" placeholder="Site Name">
+                <input type="text" id="new-site-city" placeholder="City">
+                <button id="btn-save-new-site" class="primary-btn">Save & Continue</button>
             </div>
         </section>
 
-        <section id="view-plants" class="view">
-            <button id="btn-back-sites" class="back-link outline-btn" style="margin-bottom: 1rem;">← Back to Sites</button>
+        <section id="view-sync-sites" class="view">
+            <button class="back-link outline-btn nav-home" style="margin-bottom: 1rem;">← Back to Home</button>
             <div class="section-header">
-                <h2 id="current-site-title">Plants</h2>
-                <p>Manage plant locations</p>
+                <h2>Cloud Sites</h2>
+                <p>Select a site to download its data</p>
+            </div>
+            <ul id="cloud-site-list" class="styled-list"></ul>
+        </section>
+
+        <section id="view-plants" class="view">
+            <button class="back-link outline-btn nav-home" style="margin-bottom: 1rem;">← Home</button>
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 id="current-site-title">Plants</h2>
+                    <p id="current-site-city"></p>
+                </div>
+                <button id="btn-push-cloud" class="badge-btn" style="background: #10b981; color: white;">☁️ Push to Cloud</button>
             </div>
 
             <div class="form-card">
-                <input type="text" id="plant-name" placeholder="Plant Name (e.g. Boiler House)">
-                <input type="text" id="plant-desc" placeholder="Location Description">
+                <input type="text" id="new-plant-name" placeholder="New Plant Name (e.g. Boiler House)">
                 <button id="btn-add-plant" class="secondary-btn">+ Add Plant</button>
             </div>
-
             <div id="plant-gallery" class="gallery-grid"></div>
         </section>
 
         <section id="view-assets" class="view">
-            <button id="btn-back-plants" class="back-link outline-btn" style="margin-bottom: 1rem;">← Back to Plants</button>
-            
+            <button id="btn-back-to-plants" class="back-link outline-btn" style="margin-bottom: 1rem;">← Back to Plants</button>
             <div class="section-header">
-                <h2 id="asset-page-title">Plant Assets</h2>
-                <input type="text" id="search-assets" placeholder="🔍 Search existing assets..." style="margin-top: 0.5rem;">
+                <h2 id="current-plant-title">Plant Assets</h2>
             </div>
+            <button id="btn-create-asset" class="primary-btn" style="margin-bottom: 1.5rem;">+ Create New Asset</button>
+            <div id="asset-gallery" class="gallery-list"></div>
+        </section>
 
+        <section id="view-asset-form" class="view">
+            <button id="btn-cancel-asset" class="back-link outline-btn" style="margin-bottom: 1rem;">← Cancel</button>
             <div class="form-card asset-form">
-                <h3>Add New Asset</h3>
+                <h3 id="asset-form-title">Asset Details</h3>
+                <input type="hidden" id="asset-id">
+                
                 <div class="input-group">
-                    <input type="text" id="asset-name" placeholder="Asset Name (e.g. Steam Trap #1)">
+                    <input type="text" id="asset-name" placeholder="Asset Name">
                     <input type="text" id="asset-model" placeholder="Model / Serial Number">
                     <select id="asset-condition" style="width: 100%; padding: 0.8rem; margin-bottom: 0.8rem; border-radius: 12px; border: 1px solid #e2e8f0;">
                         <option value="">Select Condition</option>
@@ -96,7 +110,7 @@
 
                 <div class="camera-box">
                     <input type="file" id="asset-photo" accept="image/jpeg" capture="environment">
-                    <label for="asset-photo" class="camera-label" id="photo-status">📷 Tap to Take Photo</label>
+                    <label for="asset-photo" class="camera-label" id="photo-status">📷 Tap to Take/Update Photo</label>
                 </div>
                 
                 <div class="gps-box" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
@@ -104,16 +118,10 @@
                     <span id="gps-coords" style="font-size: 0.9rem; color: #64748b;">No GPS Data</span>
                 </div>
 
-                <button id="btn-save-asset" class="primary-btn">Save Asset</button>
+                <button id="btn-save-asset" class="primary-btn">Save Asset Locally</button>
             </div>
-
-            <hr>
-            <h3>Asset Gallery</h3>
-            <div id="asset-gallery" class="gallery-list"></div>
         </section>
-
     </main>
-
     <script type="module" src="app.js"></script>
 </body>
 </html>
