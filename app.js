@@ -26,11 +26,46 @@ let activeSiteId = null;
 let activePlantId = null;
 
 // Images State for current active form
-let currentAssetImages = []; // Array of base64 newly taken
-let currentExistingImageRefs = []; // Array of URLs already in cloud
+let currentAssetImages = []; 
+let currentExistingImageRefs = []; 
 
 function saveLocalDB() { localStorage.setItem('spiraxLocalDB', JSON.stringify(localDB)); }
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2); }
+
+// --- STATE PERSISTENCE (Fixes Page Refresh Issue) ---
+function saveAppState(viewId) {
+    localStorage.setItem('spiraxAppState', JSON.stringify({
+        view: viewId,
+        activeSiteId: activeSiteId,
+        activePlantId: activePlantId
+    }));
+}
+
+function restoreAppState() {
+    const stateStr = localStorage.getItem('spiraxAppState');
+    if (stateStr) {
+        const state = JSON.parse(stateStr);
+        activeSiteId = state.activeSiteId;
+        activePlantId = state.activePlantId;
+        
+        // Restore contextual UI titles safely
+        if (activeSiteId && localDB[activeSiteId]) {
+            document.getElementById('current-site-title').innerText = localDB[activeSiteId].name;
+            document.getElementById('current-site-city').innerText = localDB[activeSiteId].city;
+            
+            if (activePlantId && localDB[activeSiteId].plants[activePlantId]) {
+                document.getElementById('current-plant-title').innerText = `${localDB[activeSiteId].plants[activePlantId].name} Assets`;
+            }
+        }
+        
+        showView(state.view || 'view-home');
+        if (state.view === 'view-plants') renderPlants();
+        else if (state.view === 'view-assets') renderAssets();
+        else renderHome();
+    } else {
+        renderHome();
+    }
+}
 
 // --- PROGRESS BAR HELPER ---
 function setSyncProgress(percent, text) {
@@ -67,12 +102,12 @@ async function callAPI(action, payload = {}) {
 onAuthStateChanged(auth, (user) => {
     if (user) { 
         document.getElementById('main-header').style.display = 'block';
-        renderHome(); 
+        restoreAppState(); // Restores view instead of jumping to home
     } else { 
-        // Logout Fix: Ensure everything resets
         document.getElementById('main-header').style.display = 'none';
         activeSiteId = null;
         activePlantId = null;
+        localStorage.removeItem('spiraxAppState');
         showView('view-login'); 
     }
 });
@@ -81,6 +116,7 @@ function showView(id) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     window.scrollTo(0,0);
+    saveAppState(id); // Save current view for refreshes
 }
 
 document.getElementById('btn-login').onclick = () => {
@@ -90,6 +126,7 @@ document.getElementById('btn-login').onclick = () => {
 };
 document.getElementById('btn-logout').onclick = () => signOut(auth);
 document.querySelectorAll('.nav-home').forEach(btn => btn.onclick = renderHome);
+
 // Handle image selection/capture for all forms
 document.querySelectorAll('.asset-photo-input').forEach(input => {
     input.onchange = async (e) => {
@@ -97,7 +134,7 @@ document.querySelectorAll('.asset-photo-input').forEach(input => {
         if (!files.length) return;
 
         const view = e.target.closest('.view');
-        const statusBtn = view.querySelector('.outline-btn'); // The "Add Photo" button
+        const statusBtn = view.querySelector('.outline-btn'); 
         const originalText = statusBtn.innerText;
         
         statusBtn.innerText = "⏳ Processing...";
@@ -105,7 +142,6 @@ document.querySelectorAll('.asset-photo-input').forEach(input => {
 
         for (const file of files) {
             try {
-                // Compress to 1200px width at 70% quality to save localStorage space
                 const b64 = await compressImage(file, 1200, 0.7);
                 currentAssetImages.push(b64);
             } catch (err) {
@@ -116,9 +152,10 @@ document.querySelectorAll('.asset-photo-input').forEach(input => {
         renderImagePreviews(view);
         statusBtn.innerText = originalText;
         statusBtn.disabled = false;
-        e.target.value = ''; // Reset input so same file can be picked again
+        e.target.value = ''; 
     };
 });
+
 // --- HOME DASHBOARD ---
 function renderHome() {
     showView('view-home');
@@ -145,8 +182,6 @@ function renderHome() {
     }
 }
 
-// Global functions for inline HTML event handlers
-// Toggle conditional fields based on sub-type
 window.toggleSteamFields = function(select) {
     const val = select.value;
     const dnContainer = document.getElementById('steam-dn-container');
@@ -156,7 +191,6 @@ window.toggleSteamFields = function(select) {
     setPContainer.style.display = (val === 'PRV') ? 'block' : 'none';
 };
 
-// Precise GPS Recording
 window.recordPreciseGPS = function(btn) {
     const display = btn.parentElement.querySelector('.gps-display');
     const latInp = btn.parentElement.querySelector('.asset-gps-lat');
@@ -203,7 +237,6 @@ window.syncLocalSite = async function(name, city) {
     setSyncProgress(20, "Fetching updates...");
     const res = await callAPI('downloadSiteData', { siteName: name, siteCity: city });
     if (res.status === 'success') {
-        // Calculate assets for progress UI
         let assetCount = 0;
         Object.values(res.data.plants).forEach(p => assetCount += p.assets.length);
         setSyncProgress(100, `Successfully synced ${assetCount} assets!`);
@@ -255,7 +288,7 @@ async function loadCloudSites() {
         res.data.reverse().forEach(site => {
             const li = document.createElement('li');
             li.innerHTML = `<strong>${site.name}</strong><br><small>${site.city}</small>`;
-            li.onclick = () => window.syncLocalSite(site.name, site.city); // Reuse the sync function
+            li.onclick = () => window.syncLocalSite(site.name, site.city);
             list.appendChild(li);
         });
     } else {
@@ -287,15 +320,35 @@ document.getElementById('btn-add-plant').onclick = () => {
     renderPlants();
 };
 
-// --- PUSH TO CLOUD ---
+// --- PUSH TO CLOUD (CONFLICT RESOLUTION ADDED) ---
 document.getElementById('btn-push-cloud').onclick = async () => {
     const site = localDB[activeSiteId];
     
-    // Count total assets to push
+    // 1. Fetch latest data to prevent overriding other users' images
+    setSyncProgress(20, "Checking for cloud conflicts...");
+    const cloudRes = await callAPI('downloadSiteData', { siteName: site.name, siteCity: site.city });
+    
+    if (cloudRes.status === 'success' && cloudRes.data) {
+        const cloudSite = cloudRes.data;
+        // Merge image data for existing assets
+        for (const pId in site.plants) {
+            if (cloudSite.plants[pId]) {
+                site.plants[pId].assets.forEach(localAsset => {
+                    const cloudAsset = cloudSite.plants[pId].assets.find(a => a.id === localAsset.id);
+                    if (cloudAsset && cloudAsset.imageRefs) {
+                        // Merge Set ensures no duplicated URLs
+                        const combinedImages = new Set([...(cloudAsset.imageRefs || []), ...(localAsset.imageRefs || [])]);
+                        localAsset.imageRefs = Array.from(combinedImages);
+                    }
+                });
+            }
+        }
+    }
+
     let assetCount = 0;
     Object.values(site.plants).forEach(p => assetCount += p.assets.length);
     
-    setSyncProgress(40, `Pushing ${assetCount} assets & images...`);
+    setSyncProgress(50, `Pushing ${assetCount} assets & merging images...`);
 
     const res = await callAPI('pushSiteData', { siteName: site.name, siteCity: site.city, siteData: site });
     
@@ -328,13 +381,12 @@ function renderAssets() {
     assets.forEach(asset => {
         const div = document.createElement('div');
         div.className = 'form-card asset-list-item';
-        div.innerHTML = `<strong>${asset.name} (${asset.type || 'Asset'})</strong><br><small>${asset.condition} | ${asset.model || 'No model'}</small>`;
+        div.innerHTML = `<strong>${asset.name} (${asset.type || 'Asset'})</strong><br><small>${asset.condition || 'N/A'} | ${asset.model || 'No model'}</small>`;
         div.onclick = () => openSpecificForm(asset.type || 'Steam Insight', asset);
         list.appendChild(div);
     });
 }
 
-// --- 4 SPECIFIC FORMS LOGIC ---
 document.querySelectorAll('.btn-add-specific').forEach(btn => {
     btn.onclick = (e) => openSpecificForm(e.target.dataset.type, null);
 });
@@ -343,7 +395,6 @@ document.querySelectorAll('.btn-cancel-asset').forEach(btn => {
 });
 
 function openSpecificForm(type, asset) {
-    // Standardize the ID to lowercase to match typical HTML IDs
     const viewId = `view-form-${type.replace(/\s+/g, '-')}`.toLowerCase();
     const viewElement = document.getElementById(viewId);
     
@@ -353,13 +404,11 @@ function openSpecificForm(type, asset) {
     currentAssetImages = [];
     currentExistingImageRefs = [];
 
-    // Selectors
     const subTypeSelect = viewElement.querySelector('.asset-sub-type');
     const gpsDisplay = viewElement.querySelector('.gps-display');
     const latInp = viewElement.querySelector('.asset-gps-lat');
     const lngInp = viewElement.querySelector('.asset-gps-lng');
 
-    // Reset File Input safely
     const photoInp = viewElement.querySelector('.asset-photo-input');
     if(photoInp) photoInp.value = '';
     
@@ -370,14 +419,12 @@ function openSpecificForm(type, asset) {
         if(viewElement.querySelector('.asset-notes')) 
             viewElement.querySelector('.asset-notes').value = asset.notes || '';
         
-        // Steam Insight Specifics (Safe Checks)
         if (subTypeSelect) subTypeSelect.value = asset.subType || '';
         if (viewElement.querySelector('.asset-pressure')) 
             viewElement.querySelector('.asset-pressure').value = asset.steamPressure || '';
         if (viewElement.querySelector('.asset-dn-size')) 
             viewElement.querySelector('.asset-dn-size').value = asset.dnSize || '';
         
-        // GPS Loading
         if (latInp) latInp.value = asset.lat || '';
         if (lngInp) lngInp.value = asset.lng || '';
         if (gpsDisplay) gpsDisplay.innerText = asset.lat ? `${asset.lat}, ${asset.lng}` : 'No GPS data';
@@ -387,20 +434,18 @@ function openSpecificForm(type, asset) {
         
         if (subTypeSelect) window.toggleSteamFields(subTypeSelect);
     } else {
-        // Reset Logic for New Asset...
         viewElement.querySelector('.form-title').innerText = `New ${type}`;
         viewElement.querySelector('.asset-id').value = '';
         viewElement.querySelector('.asset-name').value = '';
         if (subTypeSelect) subTypeSelect.value = '';
+        if (gpsDisplay) gpsDisplay.innerText = 'No GPS';
         window.toggleSteamFields({value: ''});
     }
     
     renderImagePreviews(viewElement);
 }
 
-// MULTIPLE IMAGE HANDLING
-// SAVE ASSET DATA (Class-based for multi-form support)
-// Unified Save Logic for all Asset Types
+// --- UNIFIED SAVE LOGIC (Fixes the Double Event Listener Bug) ---
 document.querySelectorAll('.btn-save-asset').forEach(btn => {
     btn.onclick = (e) => {
         const view = e.target.closest('.view');
@@ -410,31 +455,26 @@ document.querySelectorAll('.btn-save-asset').forEach(btn => {
             return alert("Asset Name is required.");
         }
 
-        // Gather all possible fields (using optional chaining ?. to avoid errors)
         const assetObj = {
             id: view.querySelector('.asset-id')?.value || generateId(),
             type: view.querySelector('.asset-type')?.value || 'Asset',
             name: nameInp.value,
             notes: view.querySelector('.asset-notes')?.value || '',
             
-            // General & Flow/CCD Fields
             model: view.querySelector('.asset-model')?.value || '',
             condition: view.querySelector('.asset-condition')?.value || '',
             specificField1: view.querySelector('.specific-field-1')?.value || '',
             
-            // Steam Insight Specific Fields
             subType: view.querySelector('.asset-sub-type')?.value || '',
             steamPressure: view.querySelector('.asset-pressure')?.value || '',
             dnSize: view.querySelector('.asset-dn-size')?.value || '',
             setPressure: view.querySelector('.asset-set-pressure')?.value || '',
             
-            // GPS Location
             lat: view.querySelector('.asset-gps-lat')?.value || '',
             lng: view.querySelector('.asset-gps-lng')?.value || '',
             
-            // Image Management
-            imageRefs: currentExistingImageRefs, // Existing URLs from Cloud
-            localImages: currentAssetImages.length > 0 ? [...currentAssetImages] : null // New B64 strings
+            imageRefs: currentExistingImageRefs,
+            localImages: currentAssetImages.length > 0 ? [...currentAssetImages] : null
         };
 
         const assetsArray = localDB[activeSiteId].plants[activePlantId].assets;
@@ -456,7 +496,6 @@ function renderImagePreviews(viewElement) {
     const gallery = viewElement.querySelector('.image-preview-gallery');
     gallery.innerHTML = '';
     
-    // Render existing Cloud URLs
     currentExistingImageRefs.forEach((url, idx) => {
         const div = document.createElement('div');
         div.className = 'img-thumb-container';
@@ -464,7 +503,6 @@ function renderImagePreviews(viewElement) {
         gallery.appendChild(div);
     });
 
-    // Render new local Base64s
     currentAssetImages.forEach((b64, idx) => {
         const div = document.createElement('div');
         div.className = 'img-thumb-container';
@@ -472,7 +510,6 @@ function renderImagePreviews(viewElement) {
         gallery.appendChild(div);
     });
 
-    // Attach delete listeners
     gallery.querySelectorAll('.del-img-btn').forEach(btn => {
         btn.onclick = (e) => {
             e.preventDefault();
@@ -487,43 +524,6 @@ function renderImagePreviews(viewElement) {
         }
     });
 }
-
-// SAVE ASSET DATA
-document.querySelectorAll('.btn-save-asset').forEach(btn => {
-    btn.onclick = (e) => {
-        const view = e.target.closest('.view');
-        const name = view.querySelector('.asset-name').value;
-        if (!name) return alert("Asset Name is required.");
-
-        const type = view.querySelector('.asset-type').value;
-        const assetId = view.querySelector('.asset-id').value || generateId();
-        
-        const assetObj = {
-            id: assetId,
-            type: type,
-            name: name,
-            model: view.querySelector('.asset-model').value,
-            condition: view.querySelector('.asset-condition').value,
-            notes: view.querySelector('.asset-notes').value,
-            specificField1: view.querySelector('.specific-field-1').value,
-            imageRefs: currentExistingImageRefs, // Retain existing cloud URLs
-            localImages: currentAssetImages.length > 0 ? currentAssetImages : null // Attach new b64s
-        };
-
-        const assetsArray = localDB[activeSiteId].plants[activePlantId].assets;
-        const existingIndex = assetsArray.findIndex(a => a.id === assetId);
-
-        if (existingIndex > -1) {
-            assetsArray[existingIndex] = assetObj;
-        } else {
-            assetsArray.push(assetObj);
-        }
-
-        saveLocalDB();
-        showView('view-assets');
-        renderAssets();
-    };
-});
 
 function compressImage(file, maxWidth, quality) {
     return new Promise((resolve) => {
