@@ -24,6 +24,74 @@
     </header>
 
     <main id="app-container">
+        <section id="view-form-steam-insight" class="view">
+    <div class="form-container">
+        <div class="form-header">
+            <button class="nav-assets icon-btn">⬅️</button>
+            <h2 id="steam-form-title">Steam Insight</h2>
+        </div>
+
+        <input type="hidden" class="asset-id">
+        <input type="hidden" class="asset-type" value="steam-insight">
+
+        <div class="form-group">
+            <label>Asset Sub-Type</label>
+            <select class="asset-sub-type" onchange="window.toggleSteamFields(this)">
+                <option value="">-- Select Option --</option>
+                <option value="Safety Valve">1. Safety Valve</option>
+                <option value="Blocked Steam Trap">2. Blocked Steam Trap</option>
+                <option value="PRV">3. PRV</option>
+                <option value="Overflow">4. Overflow</option>
+                <option value="APT">5. APT</option>
+                <option value="Other">6. Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Asset Name</label>
+            <input type="text" class="asset-name" placeholder="e.g. Boiler House PRV 01">
+        </div>
+
+        <div class="form-group">
+            <label>GPS Location</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record Precise</button>
+                <span class="gps-display" style="font-size: 0.75rem; color: #64748b; flex:1">No GPS data</span>
+                <input type="hidden" class="asset-gps-lat">
+                <input type="hidden" class="asset-gps-lng">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Steam Pressure (barg)</label>
+            <input type="number" step="0.1" class="asset-pressure" placeholder="0.0">
+        </div>
+
+        <div id="steam-dn-container" class="form-group" style="display:none;">
+            <label>Safety Valve DN Size (e.g. 25/40)</label>
+            <input type="text" class="asset-dn-size" placeholder="25/40">
+        </div>
+
+        <div id="steam-set-pressure-container" class="form-group" style="display:none;">
+            <label>Set Pressure (barg)</label>
+            <input type="number" step="0.1" class="asset-set-pressure" placeholder="0.0">
+        </div>
+
+        <div class="form-group">
+            <label>Additional Notes</label>
+            <textarea class="asset-notes" rows="3" placeholder="Any observation..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Photos</label>
+            <input type="file" class="asset-photo-input" accept="image/*" multiple style="display:none">
+            <button class="btn-trigger-camera outline-btn" style="width:100%">📷 Take/Add Photos</button>
+            <div class="image-preview-gallery"></div>
+        </div>
+
+        <button class="primary-btn btn-save-asset" style="margin-top:1.5rem">Save Asset Locally</button>
+    </div>
+</section>
         <section id="view-login" class="view active">
             <div class="login-card">
                 <div class="logo-area" style="font-size: 3rem; text-align: center;">🏢</div>
