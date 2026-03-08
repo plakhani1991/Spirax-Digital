@@ -98,15 +98,19 @@
         </section>
 
        <section id="view-form-steam-insight" class="view">
-    <div class="form-header">
-    <button class="nav-assets icon-btn btn-cancel-asset">⬅️</button> 
-    <h2 id="steam-form-title">steam insight</h2>
+    <div class="form-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
+        <button class="outline-btn btn-cancel-asset" style="padding: 0.5rem;">⬅️</button>
+        <h2 class="form-title" style="margin:0;">Steam Insight</h2>
     </div>
 
-
-
+    <div class="form-card">
         <input type="hidden" class="asset-id">
-        <input type="hidden" class="asset-type" value="steam-insight">
+        <input type="hidden" class="asset-type" value="Steam Insight">
+
+        <div class="form-group">
+            <label>Asset Name / Tag</label>
+            <input type="text" class="asset-name" placeholder="e.g. ST-001">
+        </div>
 
         <div class="form-group">
             <label>Asset Sub-Type</label>
@@ -115,18 +119,9 @@
                 <option value="Safety Valve">1. Safety Valve</option>
                 <option value="Blocked Steam Trap">2. Blocked Steam Trap</option>
                 <option value="PRV">3. PRV</option>
-                <option value="Overflow">4. Overflow</option>
-                <option value="APT">5. APT</option>
                 <option value="Other">6. Other</option>
             </select>
         </div>
-
-<div class="form-group">
-    <label>Photos</label>
-    <input type="file" class="asset-photo-input" accept="image/*" multiple style="display:none">
-    <button class="outline-btn" onclick="this.previousElementSibling.click()" style="width:100%">📷 Take/Add Photos</button>
-    <div class="image-preview-gallery"></div>
-</div>
 
         <div class="form-group">
             <label>GPS Location</label>
@@ -144,7 +139,7 @@
         </div>
 
         <div id="steam-dn-container" class="form-group" style="display:none;">
-            <label>Safety Valve DN Size (e.g. 25/40)</label>
+            <label>Safety Valve DN Size</label>
             <input type="text" class="asset-dn-size" placeholder="25/40">
         </div>
 
@@ -161,15 +156,15 @@
         <div class="form-group">
             <label>Photos</label>
             <input type="file" class="asset-photo-input" accept="image/*" multiple style="display:none">
-            <button class="btn-trigger-camera outline-btn" style="width:100%">📷 Take/Add Photos</button>
-            <div class="image-preview-gallery"></div>
+            <button class="outline-btn" onclick="this.previousElementSibling.click()" style="width:100%">📷 Take/Add Photos</button>
+            <div class="image-preview-gallery" style="display:flex; gap:0.5rem; overflow-x:auto; margin-top:10px;"></div>
         </div>
 
         <button class="primary-btn btn-save-asset" style="margin-top:1.5rem">Save Asset Locally</button>
     </div>
 </section>
 
-        <section id="view-form-Flow-Meter" class="view asset-form-view">
+        <section id="view-form-flow-meter" class="view asset-form-view">
             <button class="back-link outline-btn btn-cancel-asset" style="margin-bottom: 1rem;">← Cancel</button>
             <div class="form-card asset-form">
                 <h3 class="form-title">Flow Meter Details</h3>
@@ -194,7 +189,7 @@
             </div>
         </section>
 
-        <section id="view-form-CCD" class="view asset-form-view">
+        <section id="view-form-ccd" class="view asset-form-view">
             <button class="back-link outline-btn btn-cancel-asset" style="margin-bottom: 1rem;">← Cancel</button>
             <div class="form-card asset-form">
                 <h3 class="form-title">CCD Details</h3>
@@ -219,7 +214,7 @@
             </div>
         </section>
 
-        <section id="view-form-DCC" class="view asset-form-view">
+        <section id="view-form-dcc" class="view asset-form-view">
             <button class="back-link outline-btn btn-cancel-asset" style="margin-bottom: 1rem;">← Cancel</button>
             <div class="form-card asset-form">
                 <h3 class="form-title">DCC Details</h3>
