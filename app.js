@@ -315,10 +315,7 @@ document.querySelectorAll('.btn-cancel-asset').forEach(btn => {
 });
 
 function openSpecificForm(type, asset) {
-    // Determine the view ID based on type (spaces to hyphens)
     const viewId = `view-form-${type.replace(/\s+/g, '-')}`;
-    
-    // If we have existing data but it's an old asset without a mapped type, default to Steam Insight view
     const viewElement = document.getElementById(viewId);
     if (!viewElement) return alert("Form view not found for type: " + type);
     
@@ -326,50 +323,97 @@ function openSpecificForm(type, asset) {
     currentAssetImages = [];
     currentExistingImageRefs = [];
 
-    const titleEl = viewElement.querySelector('.form-title');
-    const inputId = viewElement.querySelector('.asset-id');
-    const inputName = viewElement.querySelector('.asset-name');
-    const inputModel = viewElement.querySelector('.asset-model');
-    const selectCondition = viewElement.querySelector('.asset-condition');
-    const inputNotes = viewElement.querySelector('.asset-notes');
-    const inputSpecific = viewElement.querySelector('.specific-field-1');
-    const fileInput = viewElement.querySelector('.asset-photo-input');
+    // Selectors
+    const subTypeSelect = viewElement.querySelector('.asset-sub-type');
+    const gpsDisplay = viewElement.querySelector('.gps-display');
+    const latInp = viewElement.querySelector('.asset-gps-lat');
+    const lngInp = viewElement.querySelector('.asset-gps-lng');
 
     // Reset UI
-    fileInput.value = '';
+    viewElement.querySelector('.asset-photo-input').value = '';
     
     if (asset) {
-        titleEl.innerText = `Edit ${type}`;
-        inputId.value = asset.id;
-        inputName.value = asset.name || '';
-        inputModel.value = asset.model || '';
-        selectCondition.value = asset.condition || '';
-        inputNotes.value = asset.notes || '';
-        inputSpecific.value = asset.specificField1 || '';
+        viewElement.querySelector('.form-title').innerText = `Edit ${type}`;
+        viewElement.querySelector('.asset-id').value = asset.id;
+        viewElement.querySelector('.asset-name').value = asset.name || '';
+        viewElement.querySelector('.asset-notes').value = asset.notes || '';
         
-        // Load existing refs
+        // Steam Insight Specifics
+        if (subTypeSelect) subTypeSelect.value = asset.subType || '';
+        if (viewElement.querySelector('.asset-pressure')) 
+            viewElement.querySelector('.asset-pressure').value = asset.steamPressure || '';
+        if (viewElement.querySelector('.asset-dn-size')) 
+            viewElement.querySelector('.asset-dn-size').value = asset.dnSize || '';
+        if (viewElement.querySelector('.asset-set-pressure')) 
+            viewElement.querySelector('.asset-set-pressure').value = asset.setPressure || '';
+
+        // GPS Loading
+        if (latInp) latInp.value = asset.lat || '';
+        if (lngInp) lngInp.value = asset.lng || '';
+        if (gpsDisplay) gpsDisplay.innerText = asset.lat ? `${asset.lat}, ${asset.lng}` : 'No GPS data';
+
         if (asset.imageRefs) currentExistingImageRefs = [...asset.imageRefs];
-        // Handle old single image format safely locally
-        if (asset.imageRef && !currentExistingImageRefs.includes(asset.imageRef)) currentExistingImageRefs.push(asset.imageRef);
-        
-        // If there are unsynced local images attached
         if (asset.localImages) currentAssetImages = [...asset.localImages];
+        
+        // Refresh field visibility (Safety Valve/PRV)
+        if (subTypeSelect) window.toggleSteamFields(subTypeSelect);
     } else {
-        titleEl.innerText = `New ${type}`;
-        inputId.value = '';
-        inputName.value = '';
-        inputModel.value = '';
-        selectCondition.value = '';
-        inputNotes.value = '';
-        inputSpecific.value = '';
+        viewElement.querySelector('.form-title').innerText = `New ${type}`;
+        viewElement.querySelector('.asset-id').value = '';
+        viewElement.querySelector('.asset-name').value = '';
+        viewElement.querySelector('.asset-notes').value = '';
+        if (subTypeSelect) subTypeSelect.value = '';
+        if (gpsDisplay) gpsDisplay.innerText = 'No GPS data';
+        if (latInp) latInp.value = '';
+        if (lngInp) lngInp.value = '';
+        
+        // Reset conditional fields
+        window.toggleSteamFields({value: ''});
     }
     
     renderImagePreviews(viewElement);
 }
 
 // MULTIPLE IMAGE HANDLING
-document.querySelectorAll('.btn-trigger-camera').forEach(btn => {
-    btn.onclick = (e) => e.target.previousElementSibling.click();
+// SAVE ASSET DATA (Class-based for multi-form support)
+document.querySelectorAll('.btn-save-asset').forEach(btn => {
+    btn.onclick = (e) => {
+        const view = e.target.closest('.view');
+        const name = view.querySelector('.asset-name').value;
+        if (!name) return alert("Asset Name is required.");
+
+        const type = view.querySelector('.asset-type').value;
+        const assetId = view.querySelector('.asset-id').value || generateId();
+        
+        // Capture new Steam Insight fields
+        const assetObj = {
+            id: assetId,
+            type: type,
+            subType: view.querySelector('.asset-sub-type')?.value || '',
+            name: name,
+            notes: view.querySelector('.asset-notes').value,
+            steamPressure: view.querySelector('.asset-pressure')?.value || '',
+            dnSize: view.querySelector('.asset-dn-size')?.value || '',
+            setPressure: view.querySelector('.asset-set-pressure')?.value || '',
+            lat: view.querySelector('.asset-gps-lat')?.value || '',
+            lng: view.querySelector('.asset-gps-lng')?.value || '',
+            imageRefs: currentExistingImageRefs,
+            localImages: currentAssetImages.length > 0 ? currentAssetImages : null
+        };
+
+        const assetsArray = localDB[activeSiteId].plants[activePlantId].assets;
+        const existingIndex = assetsArray.findIndex(a => a.id === assetId);
+
+        if (existingIndex > -1) {
+            assetsArray[existingIndex] = assetObj;
+        } else {
+            assetsArray.push(assetObj);
+        }
+
+        saveLocalDB();
+        showView('view-assets');
+        renderAssets();
+    };
 });
 
 document.querySelectorAll('.asset-photo-input').forEach(input => {
