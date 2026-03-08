@@ -131,6 +131,16 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label>Installation Requirement</label>
+                    <select class="asset-install-req">
+                        <option value="">-- Select --</option>
+                        <option value="Easy Install">Easy Install</option>
+                        <option value="Step Ladder">Step Ladder</option>
+                        <option value="Scaffolding">Scaffolding</option>
+                        <option value="MEWP">MEWP</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Steam Pressure (barg)</label>
                     <input type="number" step="0.1" class="asset-pressure" placeholder="0.0">
                 </div>
@@ -151,6 +161,18 @@
                     <input type="file" class="asset-photo-input" accept="image/*" capture="environment" multiple style="display:none">
                     <button class="outline-btn photo-trigger-btn" onclick="this.previousElementSibling.click()" style="width:100%">📷 Take / Add Photos</button>
                     <div class="image-preview-gallery"></div>
+                </div>
+                <div class="form-group lora-section">
+                    <label>Assign LoRa Device</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="outline-btn btn-scan-qr" style="flex:1">📱 Scan QR Code</button>
+                        <span class="lora-value" style="flex:1">No device</span>
+                        <input type="hidden" class="asset-lora-info">
+                    </div>
+                    <div class="qr-video-box" style="display:none; margin-top:0.5rem;">
+                        <video playsinline></video>
+                        <button class="delete-btn qr-stop-btn" style="position:absolute; top:4px; right:4px;">Stop</button>
+                    </div>
                 </div>
                 <button class="primary-btn btn-save-asset">Save Asset Locally</button>
             </div>
@@ -237,6 +259,16 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label>Installation Requirement</label>
+                    <select class="asset-install-req">
+                        <option value="">-- Select --</option>
+                        <option value="Easy Install">Easy Install</option>
+                        <option value="Step Ladder">Step Ladder</option>
+                        <option value="Scaffolding">Scaffolding</option>
+                        <option value="MEWP">MEWP</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Notes</label>
                     <textarea class="asset-notes" placeholder="Notes" rows="3"></textarea>
                 </div>
@@ -245,6 +277,18 @@
                     <input type="file" class="asset-photo-input" accept="image/*" capture="environment" multiple style="display:none">
                     <button class="outline-btn photo-trigger-btn" onclick="this.previousElementSibling.click()" style="width:100%">📷 Take / Add Photos</button>
                     <div class="image-preview-gallery"></div>
+                </div>
+                <div class="form-group lora-section">
+                    <label>Assign LoRa Device</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="outline-btn btn-scan-qr" style="flex:1">📱 Scan QR Code</button>
+                        <span class="lora-value" style="flex:1">No device</span>
+                        <input type="hidden" class="asset-lora-info">
+                    </div>
+                    <div class="qr-video-box" style="display:none; margin-top:0.5rem; position:relative;">
+                        <video playsinline style="width:100%; border-radius:8px;"></video>
+                        <button class="delete-btn qr-stop-btn" style="position:absolute; top:4px; right:4px;">Stop</button>
+                    </div>
                 </div>
                 <button class="primary-btn btn-save-asset">Save Asset</button>
             </div>
@@ -288,6 +332,16 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label>Installation Requirement</label>
+                    <select class="asset-install-req">
+                        <option value="">-- Select --</option>
+                        <option value="Easy Install">Easy Install</option>
+                        <option value="Step Ladder">Step Ladder</option>
+                        <option value="Scaffolding">Scaffolding</option>
+                        <option value="MEWP">MEWP</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Notes</label>
                     <textarea class="asset-notes" placeholder="Notes" rows="3"></textarea>
                 </div>
@@ -297,11 +351,33 @@
                     <button class="outline-btn photo-trigger-btn" onclick="this.previousElementSibling.click()" style="width:100%">📷 Take / Add Photos</button>
                     <div class="image-preview-gallery"></div>
                 </div>
+                <div class="form-group lora-section">
+                    <label>Assign LoRa Device</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="outline-btn btn-scan-qr" style="flex:1">📱 Scan QR Code</button>
+                        <span class="lora-value" style="flex:1">No device</span>
+                        <input type="hidden" class="asset-lora-info">
+                    </div>
+                    <div class="qr-video-box" style="display:none; margin-top:0.5rem; position:relative;">
+                        <video playsinline style="width:100%; border-radius:8px;"></video>
+                        <button class="delete-btn qr-stop-btn" style="position:absolute; top:4px; right:4px;">Stop</button>
+                    </div>
+                </div>
                 <button class="primary-btn btn-save-asset">Save Asset</button>
             </div>
         </section>
 
     </main>
+
+    <!-- IMAGE LIGHTBOX OVERLAY -->
+    <div id="image-lightbox" class="image-lightbox">
+        <img id="lightbox-img" src="" alt="Preview">
+        <div class="lightbox-actions">
+            <button class="lightbox-delete" id="lightbox-delete-btn">🗑️ Delete Image</button>
+            <button class="lightbox-close" id="lightbox-close-btn">✕ Close</button>
+        </div>
+    </div>
+
     <script type="module" src="app.js"></script>
 </body>
 </html>
