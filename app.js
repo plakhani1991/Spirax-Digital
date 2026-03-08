@@ -90,7 +90,35 @@ document.getElementById('btn-login').onclick = () => {
 };
 document.getElementById('btn-logout').onclick = () => signOut(auth);
 document.querySelectorAll('.nav-home').forEach(btn => btn.onclick = renderHome);
+// Handle image selection/capture for all forms
+document.querySelectorAll('.asset-photo-input').forEach(input => {
+    input.onchange = async (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
 
+        const view = e.target.closest('.view');
+        const statusBtn = view.querySelector('.outline-btn'); // The "Add Photo" button
+        const originalText = statusBtn.innerText;
+        
+        statusBtn.innerText = "⏳ Processing...";
+        statusBtn.disabled = true;
+
+        for (const file of files) {
+            try {
+                // Compress to 1200px width at 70% quality to save localStorage space
+                const b64 = await compressImage(file, 1200, 0.7);
+                currentAssetImages.push(b64);
+            } catch (err) {
+                console.error("Compression error:", err);
+            }
+        }
+
+        renderImagePreviews(view);
+        statusBtn.innerText = originalText;
+        statusBtn.disabled = false;
+        e.target.value = ''; // Reset input so same file can be picked again
+    };
+});
 // --- HOME DASHBOARD ---
 function renderHome() {
     showView('view-home');
@@ -372,31 +400,41 @@ function openSpecificForm(type, asset) {
 
 // MULTIPLE IMAGE HANDLING
 // SAVE ASSET DATA (Class-based for multi-form support)
+// Unified Save Logic for all Asset Types
 document.querySelectorAll('.btn-save-asset').forEach(btn => {
     btn.onclick = (e) => {
         const view = e.target.closest('.view');
         const nameInp = view.querySelector('.asset-name');
-        if (!nameInp || !nameInp.value) return alert("Asset Name is required.");
+        
+        if (!nameInp || !nameInp.value) {
+            return alert("Asset Name is required.");
+        }
 
-        // Use Optional Chaining (?.) to prevent crashes if a field is missing in a specific form
+        // Gather all possible fields (using optional chaining ?. to avoid errors)
         const assetObj = {
             id: view.querySelector('.asset-id')?.value || generateId(),
             type: view.querySelector('.asset-type')?.value || 'Asset',
             name: nameInp.value,
             notes: view.querySelector('.asset-notes')?.value || '',
-            // General Fields
+            
+            // General & Flow/CCD Fields
             model: view.querySelector('.asset-model')?.value || '',
             condition: view.querySelector('.asset-condition')?.value || '',
-            // Steam Fields
+            specificField1: view.querySelector('.specific-field-1')?.value || '',
+            
+            // Steam Insight Specific Fields
             subType: view.querySelector('.asset-sub-type')?.value || '',
             steamPressure: view.querySelector('.asset-pressure')?.value || '',
             dnSize: view.querySelector('.asset-dn-size')?.value || '',
             setPressure: view.querySelector('.asset-set-pressure')?.value || '',
-            // GPS & Images
+            
+            // GPS Location
             lat: view.querySelector('.asset-gps-lat')?.value || '',
             lng: view.querySelector('.asset-gps-lng')?.value || '',
-            imageRefs: currentExistingImageRefs,
-            localImages: currentAssetImages.length > 0 ? [...currentAssetImages] : null
+            
+            // Image Management
+            imageRefs: currentExistingImageRefs, // Existing URLs from Cloud
+            localImages: currentAssetImages.length > 0 ? [...currentAssetImages] : null // New B64 strings
         };
 
         const assetsArray = localDB[activeSiteId].plants[activePlantId].assets;
