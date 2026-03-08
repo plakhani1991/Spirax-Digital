@@ -118,6 +118,42 @@ function renderHome() {
 }
 
 // Global functions for inline HTML event handlers
+// Toggle conditional fields based on sub-type
+window.toggleSteamFields = function(select) {
+    const val = select.value;
+    const dnContainer = document.getElementById('steam-dn-container');
+    const setPContainer = document.getElementById('steam-set-pressure-container');
+    
+    dnContainer.style.display = (val === 'Safety Valve') ? 'block' : 'none';
+    setPContainer.style.display = (val === 'PRV') ? 'block' : 'none';
+};
+
+// Precise GPS Recording
+window.recordPreciseGPS = function(btn) {
+    const display = btn.parentElement.querySelector('.gps-display');
+    const latInp = btn.parentElement.querySelector('.asset-gps-lat');
+    const lngInp = btn.parentElement.querySelector('.asset-gps-lng');
+    
+    display.innerText = "🛰️ Locating...";
+    
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const lat = pos.coords.latitude.toFixed(6);
+            const lng = pos.coords.longitude.toFixed(6);
+            latInp.value = lat;
+            lngInp.value = lng;
+            display.innerText = `${lat}, ${lng}`;
+            btn.style.borderColor = "#22c55e";
+            btn.style.color = "#22c55e";
+        },
+        (err) => {
+            display.innerText = "❌ Failed to get GPS";
+            alert("Error: " + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+    );
+};
+
 window.openSite = function(siteId) {
     activeSiteId = siteId;
     const site = localDB[siteId];
