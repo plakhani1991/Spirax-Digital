@@ -536,6 +536,9 @@ function openSpecificForm(type, asset) {
     const gpsDisplay = viewElement.querySelector('.gps-display');
     const latInp = viewElement.querySelector('.asset-gps-lat');
     const lngInp = viewElement.querySelector('.asset-gps-lng');
+    const loraDisplay = viewElement.querySelector('.lora-value');
+    const loraInp = viewElement.querySelector('.asset-lora-info');
+    const installReq = viewElement.querySelector('.asset-install-req');
 
     const photoInp = viewElement.querySelector('.asset-photo-input');
     if (photoInp) photoInp.value = '';
@@ -567,6 +570,10 @@ function openSpecificForm(type, asset) {
         if (viewElement.querySelector('.specific-field-1'))
             viewElement.querySelector('.specific-field-1').value = asset.specificField1 || '';
 
+        if (installReq) installReq.value = asset.installationRequirement || '';
+        if (loraInp) loraInp.value = asset.loraInfo || '';
+        if (loraDisplay) loraDisplay.innerText = asset.loraInfo || 'No device';
+
         if (latInp) latInp.value = asset.lat || '';
         if (lngInp) lngInp.value = asset.lng || '';
         if (gpsDisplay) gpsDisplay.innerText = asset.lat ? `${asset.lat}, ${asset.lng}` : 'No GPS data';
@@ -580,6 +587,8 @@ function openSpecificForm(type, asset) {
         viewElement.querySelector('.asset-id').value = '';
         if (subTypeSelect) subTypeSelect.value = '';
         if (gpsDisplay) gpsDisplay.innerText = 'No GPS';
+        if (loraDisplay) loraDisplay.innerText = 'No device';
+        if (loraInp) loraInp.value = '';
         window.toggleSteamFields({ value: '' });
     }
 
@@ -610,6 +619,8 @@ document.querySelectorAll('.btn-save-asset').forEach(btn => {
             setPressure: view.querySelector('.asset-set-pressure')?.value || '',
             lat: view.querySelector('.asset-gps-lat')?.value || '',
             lng: view.querySelector('.asset-gps-lng')?.value || '',
+            installationRequirement: view.querySelector('.asset-install-req')?.value || '',
+            loraInfo: view.querySelector('.asset-lora-info')?.value || '',
             imageRefs: currentExistingImageRefs,
             localImages: currentAssetImages.length > 0 ? [...currentAssetImages] : null
         };
@@ -637,6 +648,45 @@ document.querySelectorAll('.btn-save-asset').forEach(btn => {
     };
 });
 
+// --- IMAGE LIGHTBOX ---
+let lightboxCurrentType = null;
+let lightboxCurrentIndex = null;
+let lightboxCurrentView = null;
+
+function openLightbox(src, type, index, viewElement) {
+    lightboxCurrentType = type;
+    lightboxCurrentIndex = index;
+    lightboxCurrentView = viewElement;
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('image-lightbox').classList.add('active');
+}
+
+document.getElementById('lightbox-close-btn').onclick = () => {
+    document.getElementById('image-lightbox').classList.remove('active');
+};
+
+document.getElementById('lightbox-delete-btn').onclick = () => {
+    if (!confirm("Delete this image?")) return;
+    if (lightboxCurrentType === 'local') {
+        currentAssetImages.splice(lightboxCurrentIndex, 1);
+    } else {
+        const deletedUrl = currentExistingImageRefs[lightboxCurrentIndex];
+        if (activeSiteId && activePlantId) {
+            const assetIdEl = lightboxCurrentView.querySelector('.asset-id');
+            const assetId = assetIdEl ? assetIdEl.value : '';
+            if (assetId && deletedUrl) {
+                addPendingDeletion(activeSiteId, {
+                    type: 'image', plantId: activePlantId, assetId: assetId,
+                    imageUrl: deletedUrl, timestamp: Date.now()
+                });
+            }
+        }
+        currentExistingImageRefs.splice(lightboxCurrentIndex, 1);
+    }
+    document.getElementById('image-lightbox').classList.remove('active');
+    renderImagePreviews(lightboxCurrentView);
+};
+
 function renderImagePreviews(viewElement) {
     const gallery = viewElement.querySelector('.image-preview-gallery');
     if (!gallery) return;
@@ -646,25 +696,28 @@ function renderImagePreviews(viewElement) {
         const div = document.createElement('div');
         div.className = 'img-thumb-container';
         div.innerHTML = `<img src="${url}" class="img-thumb"> <button class="del-img-btn" data-type="cloud" data-index="${idx}">✕</button>`;
+        div.querySelector('.img-thumb').onclick = () => openLightbox(url, 'cloud', idx, viewElement);
         gallery.appendChild(div);
     });
 
     currentAssetImages.forEach((b64, idx) => {
         const div = document.createElement('div');
         div.className = 'img-thumb-container';
-        div.innerHTML = `<img src="data:image/jpeg;base64,${b64}" class="img-thumb"> <button class="del-img-btn" data-type="local" data-index="${idx}">✕</button>`;
+        const src = `data:image/jpeg;base64,${b64}`;
+        div.innerHTML = `<img src="${src}" class="img-thumb"> <button class="del-img-btn" data-type="local" data-index="${idx}">✕</button>`;
+        div.querySelector('.img-thumb').onclick = () => openLightbox(src, 'local', idx, viewElement);
         gallery.appendChild(div);
     });
 
     gallery.querySelectorAll('.del-img-btn').forEach(btn => {
         btn.onclick = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             const isLocal = e.target.dataset.type === 'local';
             const index = parseInt(e.target.dataset.index);
             if (isLocal) {
                 currentAssetImages.splice(index, 1);
             } else {
-                // Track cloud image deletion
                 const deletedUrl = currentExistingImageRefs[index];
                 if (activeSiteId && activePlantId) {
                     const assetIdEl = viewElement.querySelector('.asset-id');
@@ -681,6 +734,71 @@ function renderImagePreviews(viewElement) {
             renderImagePreviews(viewElement);
         }
     });
+}
+
+// --- QR CODE SCANNER (uses camera + BarcodeDetector API) ---
+let activeQRStream = null;
+
+document.querySelectorAll('.btn-scan-qr').forEach(btn => {
+    btn.onclick = async () => {
+        const view = btn.closest('.view');
+        const videoBox = view.querySelector('.qr-video-box');
+        const video = videoBox.querySelector('video');
+        const loraDisplay = view.querySelector('.lora-value');
+        const loraInput = view.querySelector('.asset-lora-info');
+        const stopBtn = videoBox.querySelector('.qr-stop-btn');
+
+        // Check if BarcodeDetector is available
+        if (!('BarcodeDetector' in window)) {
+            // Fallback: manual text entry
+            const val = prompt("QR Scanner not supported on this device.\nEnter LoRa Device ID manually:");
+            if (val) {
+                loraInput.value = val;
+                loraDisplay.innerText = val;
+            }
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            activeQRStream = stream;
+            video.srcObject = stream;
+            video.play();
+            videoBox.style.display = 'block';
+
+            const detector = new BarcodeDetector({ formats: ['qr_code'] });
+
+            const scanInterval = setInterval(async () => {
+                try {
+                    const barcodes = await detector.detect(video);
+                    if (barcodes.length > 0) {
+                        const value = barcodes[0].rawValue;
+                        loraInput.value = value;
+                        loraDisplay.innerText = value;
+                        loraDisplay.style.color = '#22c55e';
+                        clearInterval(scanInterval);
+                        stopQRStream(video, videoBox);
+                    }
+                } catch { /* frame not ready */ }
+            }, 300);
+
+            stopBtn.onclick = () => {
+                clearInterval(scanInterval);
+                stopQRStream(video, videoBox);
+            };
+        } catch (err) {
+            alert("Camera error: " + err.message);
+        }
+    };
+});
+
+function stopQRStream(video, videoBox) {
+    if (activeQRStream) {
+        activeQRStream.getTracks().forEach(t => t.stop());
+        activeQRStream = null;
+    }
+    video.srcObject = null;
+    videoBox.style.display = 'none';
 }
 
 function compressImage(file, maxWidth, quality) {
