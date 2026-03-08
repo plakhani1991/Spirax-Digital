@@ -24,7 +24,6 @@
     </header>
 
     <main id="app-container">
-        
         <section id="view-login" class="view active">
             <div class="login-card">
                 <div class="logo-area" style="font-size: 3rem; text-align: center;">🏢</div>
@@ -43,7 +42,6 @@
             </div>
             <button id="nav-create-site" class="primary-btn" style="margin-bottom: 1rem;">+ Create New Local Site</button>
             <button id="nav-sync-sites" class="secondary-btn" style="width: 100%; margin-bottom: 2rem;">☁️ Sync Existing Site</button>
-            
             <h3>Local Offline Sites</h3>
             <ul id="local-site-list" class="styled-list"></ul>
         </section>
@@ -60,9 +58,7 @@
 
         <section id="view-sync-sites" class="view">
             <button class="back-link outline-btn nav-home" style="margin-bottom: 1rem;">← Back to Home</button>
-            <div class="section-header">
-                <h2>Cloud Sites</h2>
-            </div>
+            <div class="section-header"><h2>Cloud Sites</h2></div>
             <ul id="cloud-site-list" class="styled-list"></ul>
         </section>
 
@@ -75,7 +71,6 @@
                 </div>
                 <button id="btn-push-cloud" class="badge-btn" style="background: #10b981; color: white;">☁️ Push</button>
             </div>
-
             <div class="form-card">
                 <input type="text" id="new-plant-name" placeholder="New Plant Name">
                 <button id="btn-add-plant" class="secondary-btn">+ Add Plant</button>
@@ -85,9 +80,7 @@
 
         <section id="view-assets" class="view">
             <button id="btn-back-to-plants" class="back-link outline-btn" style="margin-bottom: 1rem;">← Back to Plants</button>
-            <div class="section-header">
-                <h2 id="current-plant-title">Plant Assets</h2>
-            </div>
+            <div class="section-header"><h2 id="current-plant-title">Plant Assets</h2></div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1.5rem;">
                 <button class="primary-btn btn-add-specific" data-type="Steam Insight">+ Steam Insight</button>
                 <button class="primary-btn btn-add-specific" data-type="Flow Meter">+ Flow Meter</button>
@@ -97,148 +90,81 @@
             <div id="asset-gallery" class="gallery-list"></div>
         </section>
 
-       <section id="view-form-steam-insight" class="view">
-    <div class="form-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
-        <button class="outline-btn btn-cancel-asset" style="padding: 0.5rem;">⬅️</button>
-        <h2 class="form-title" style="margin:0;">Steam Insight</h2>
-    </div>
-
-    <div class="form-card">
-        <input type="hidden" class="asset-id">
-        <input type="hidden" class="asset-type" value="Steam Insight">
-
-        <div class="form-group">
-            <label>Asset Name / Tag</label>
-            <input type="text" class="asset-name" placeholder="e.g. ST-001">
-        </div>
-
-        <div class="form-group">
-            <label>Asset Sub-Type</label>
-            <select class="asset-sub-type" onchange="window.toggleSteamFields(this)">
-                <option value="">-- Select Option --</option>
-                <option value="Safety Valve">1. Safety Valve</option>
-                <option value="Blocked Steam Trap">2. Blocked Steam Trap</option>
-                <option value="PRV">3. PRV</option>
-                <option value="Other">6. Other</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>GPS Location</label>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record Precise</button>
-                <span class="gps-display" style="font-size: 0.75rem; color: #64748b; flex:1">No GPS data</span>
-                <input type="hidden" class="asset-gps-lat">
-                <input type="hidden" class="asset-gps-lng">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Steam Pressure (barg)</label>
-            <input type="number" step="0.1" class="asset-pressure" placeholder="0.0">
-        </div>
-
-        <div id="steam-dn-container" class="form-group" style="display:none;">
-            <label>Safety Valve DN Size</label>
-            <input type="text" class="asset-dn-size" placeholder="25/40">
-        </div>
-
-        <div id="steam-set-pressure-container" class="form-group" style="display:none;">
-            <label>Set Pressure (barg)</label>
-            <input type="number" step="0.1" class="asset-set-pressure" placeholder="0.0">
-        </div>
-
-        <div class="form-group">
-            <label>Additional Notes</label>
-            <textarea class="asset-notes" rows="3" placeholder="Any observation..."></textarea>
-        </div>
-
-        <div class="form-group">
-            <label>Photos</label>
-            <input type="file" class="asset-photo-input" accept="image/*" multiple style="display:none">
-            <button class="outline-btn" onclick="this.previousElementSibling.click()" style="width:100%">📷 Take/Add Photos</button>
-            <div class="image-preview-gallery" style="display:flex; gap:0.5rem; overflow-x:auto; margin-top:10px;"></div>
-        </div>
-
-        <button class="primary-btn btn-save-asset" style="margin-top:1.5rem">Save Asset Locally</button>
-    </div>
-</section>
-
-        <section id="view-form-flow-meter" class="view asset-form-view">
+        <section id="view-form-steam-insight" class="view">
             <button class="back-link outline-btn btn-cancel-asset" style="margin-bottom: 1rem;">← Cancel</button>
-            <div class="form-card asset-form">
-                <h3 class="form-title">Flow Meter Details</h3>
+            <div class="form-card">
+                <h3 class="form-title">Steam Insight</h3>
+                <input type="hidden" class="asset-id">
+                <input type="hidden" class="asset-type" value="Steam Insight">
+                <div class="form-group">
+                    <label>Asset Name / Tag</label>
+                    <input type="text" class="asset-name" placeholder="ST-001">
+                </div>
+                <div class="form-group">
+                    <label>Asset Sub-Type</label>
+                    <select class="asset-sub-type" onchange="window.toggleSteamFields(this)">
+                        <option value="">-- Select Option --</option>
+                        <option value="Safety Valve">Safety Valve</option>
+                        <option value="Blocked Steam Trap">Blocked Steam Trap</option>
+                        <option value="PRV">PRV</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>GPS Location</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record</button>
+                        <span class="gps-display" style="font-size: 0.75rem; color: #64748b; flex:1">No GPS</span>
+                        <input type="hidden" class="asset-gps-lat"><input type="hidden" class="asset-gps-lng">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Steam Pressure (barg)</label>
+                    <input type="number" step="0.1" class="asset-pressure" placeholder="0.0">
+                </div>
+                <div id="steam-dn-container" class="form-group" style="display:none;">
+                    <label>Safety Valve DN Size</label>
+                    <input type="text" class="asset-dn-size" placeholder="25/40">
+                </div>
+                <div id="steam-set-pressure-container" class="form-group" style="display:none;">
+                    <label>Set Pressure (barg)</label>
+                    <input type="number" step="0.1" class="asset-set-pressure" placeholder="0.0">
+                </div>
+                <textarea class="asset-notes" rows="3" placeholder="Notes..."></textarea>
+                <div class="form-group">
+                    <label>Photos</label>
+                    <input type="file" class="asset-photo-input" accept="image/*" multiple style="display:none">
+                    <button class="outline-btn" onclick="this.previousElementSibling.click()" style="width:100%">📷 Take/Add Photos</button>
+                    <div class="image-preview-gallery" style="display:flex; gap:0.5rem; overflow-x:auto; margin-top:10px;"></div>
+                </div>
+                <button class="primary-btn btn-save-asset">Save Asset Locally</button>
+            </div>
+        </section>
+
+        <section id="view-form-flow-meter" class="view">
+            <button class="back-link outline-btn btn-cancel-asset" style="margin-bottom: 1rem;">← Cancel</button>
+            <div class="form-card">
+                <h3 class="form-title">Flow Meter</h3>
                 <input type="hidden" class="asset-id">
                 <input type="hidden" class="asset-type" value="Flow Meter">
-                <div class="input-group">
-                    <input type="text" class="asset-name" placeholder="Asset Name">
-                    <input type="text" class="asset-model" placeholder="Model / Serial Number">
-                    <select class="asset-condition">
-                        <option value="">Select Condition</option>
-                        <option value="New">New</option><option value="Good">Good</option><option value="Fair">Fair</option><option value="Action Required">Action Required</option>
-                    </select>
-                    <input type="text" class="specific-field-1" placeholder="Pipe Size (mm)">
-                    <textarea class="asset-notes" placeholder="Additional Notes" rows="3"></textarea>
+                <input type="text" class="asset-name" placeholder="Asset Name">
+                <input type="text" class="asset-model" placeholder="Model / Serial">
+                <select class="asset-condition">
+                    <option value="">Condition</option>
+                    <option value="New">New</option><option value="Good">Good</option>
+                </select>
+                <input type="text" class="specific-field-1" placeholder="Pipe Size (mm)">
+                <textarea class="asset-notes" placeholder="Notes" rows="3"></textarea>
+                <div class="form-group">
+                    <input type="file" class="asset-photo-input" accept="image/*" multiple style="display:none">
+                    <button class="outline-btn" onclick="this.previousElementSibling.click()" style="width:100%">📷 Take/Add Photos</button>
+                    <div class="image-preview-gallery"></div>
                 </div>
-                <div class="camera-ui">
-                    <input type="file" class="asset-photo-input" accept="image/jpeg" capture="environment" multiple>
-                    <button class="outline-btn btn-trigger-camera" style="width: 100%; margin-bottom: 0.5rem;">📷 Take / Select Photos</button>
-                    <div class="image-preview-gallery" style="display:flex; gap:0.5rem; overflow-x:auto; padding-bottom: 0.5rem;"></div>
-                </div>
-                <button class="primary-btn btn-save-asset" style="margin-top: 1rem;">Save Asset</button>
+                <button class="primary-btn btn-save-asset">Save Asset</button>
             </div>
         </section>
 
-        <section id="view-form-ccd" class="view asset-form-view">
-            <button class="back-link outline-btn btn-cancel-asset" style="margin-bottom: 1rem;">← Cancel</button>
-            <div class="form-card asset-form">
-                <h3 class="form-title">CCD Details</h3>
-                <input type="hidden" class="asset-id">
-                <input type="hidden" class="asset-type" value="CCD">
-                <div class="input-group">
-                    <input type="text" class="asset-name" placeholder="Asset Name">
-                    <input type="text" class="asset-model" placeholder="Model / Serial Number">
-                    <select class="asset-condition">
-                        <option value="">Select Condition</option>
-                        <option value="New">New</option><option value="Good">Good</option><option value="Fair">Fair</option><option value="Action Required">Action Required</option>
-                    </select>
-                    <input type="text" class="specific-field-1" placeholder="Condensate Load (kg/hr)">
-                    <textarea class="asset-notes" placeholder="Additional Notes" rows="3"></textarea>
-                </div>
-                <div class="camera-ui">
-                    <input type="file" class="asset-photo-input" accept="image/jpeg" capture="environment" multiple>
-                    <button class="outline-btn btn-trigger-camera" style="width: 100%; margin-bottom: 0.5rem;">📷 Take / Select Photos</button>
-                    <div class="image-preview-gallery" style="display:flex; gap:0.5rem; overflow-x:auto; padding-bottom: 0.5rem;"></div>
-                </div>
-                <button class="primary-btn btn-save-asset" style="margin-top: 1rem;">Save Asset</button>
-            </div>
-        </section>
-
-        <section id="view-form-dcc" class="view asset-form-view">
-            <button class="back-link outline-btn btn-cancel-asset" style="margin-bottom: 1rem;">← Cancel</button>
-            <div class="form-card asset-form">
-                <h3 class="form-title">DCC Details</h3>
-                <input type="hidden" class="asset-id">
-                <input type="hidden" class="asset-type" value="DCC">
-                <div class="input-group">
-                    <input type="text" class="asset-name" placeholder="Asset Name">
-                    <input type="text" class="asset-model" placeholder="Model / Serial Number">
-                    <select class="asset-condition">
-                        <option value="">Select Condition</option>
-                        <option value="New">New</option><option value="Good">Good</option><option value="Fair">Fair</option><option value="Action Required">Action Required</option>
-                    </select>
-                    <input type="text" class="specific-field-1" placeholder="Valve Type">
-                    <textarea class="asset-notes" placeholder="Additional Notes" rows="3"></textarea>
-                </div>
-                <div class="camera-ui">
-                    <input type="file" class="asset-photo-input" accept="image/jpeg" capture="environment" multiple>
-                    <button class="outline-btn btn-trigger-camera" style="width: 100%; margin-bottom: 0.5rem;">📷 Take / Select Photos</button>
-                    <div class="image-preview-gallery" style="display:flex; gap:0.5rem; overflow-x:auto; padding-bottom: 0.5rem;"></div>
-                </div>
-                <button class="primary-btn btn-save-asset" style="margin-top: 1rem;">Save Asset</button>
-            </div>
-        </section>
-    </main>
+        </main>
     <script type="module" src="app.js"></script>
 </body>
 </html>
