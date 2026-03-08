@@ -318,6 +318,16 @@ function openSpecificForm(type, asset) {
     const viewId = `view-form-${type.replace(/\s+/g, '-')}`;
     const viewElement = document.getElementById(viewId);
     if (!viewElement) return alert("Form view not found for type: " + type);
+
+    const viewId = `view-form-${type.replace(/\s+/g, '-')}`.toLowerCase();
+    const view = document.getElementById(viewId);
+    
+    if (!view) {
+        console.error("View not found:", viewId);
+        return alert("Form view not found for type: " + type);
+    }
+    showView(viewId);
+
     
     showView(viewId);
     currentAssetImages = [];
