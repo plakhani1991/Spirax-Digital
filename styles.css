@@ -279,20 +279,16 @@ input::placeholder, textarea::placeholder {
     position: absolute;
     top: 6px;
     right: 6px;
-    background: transparent;
+    background: rgba(239,68,68,0.08);
     color: var(--danger);
-    border: none;
-    padding: 4px;
+    border: 1px solid rgba(239,68,68,0.2);
+    padding: 4px 6px;
     font-size: 0.85rem;
-    opacity: 0;
-    transition: opacity 0.15s;
+    opacity: 1;
     border-radius: 6px;
 }
-.plant-card:hover .plant-delete-btn {
-    opacity: 1;
-}
 .plant-card .plant-delete-btn:hover {
-    background: rgba(239,68,68,0.1);
+    background: rgba(239,68,68,0.15);
 }
 
 .asset-list-item {
@@ -312,18 +308,95 @@ input::placeholder, textarea::placeholder {
 .asset-list-item .asset-info strong { font-size: 0.9rem; }
 .asset-list-item .asset-info small { color: var(--text-light); font-size: 0.8rem; }
 .asset-list-item .asset-delete-btn {
-    background: transparent;
+    background: rgba(239,68,68,0.08);
     color: var(--danger);
-    border: none;
-    padding: 6px;
+    border: 1px solid rgba(239,68,68,0.2);
+    padding: 6px 8px;
     font-size: 0.85rem;
-    opacity: 0;
-    transition: opacity 0.15s;
+    opacity: 1;
     border-radius: 6px;
     flex-shrink: 0;
 }
-.asset-list-item:hover .asset-delete-btn { opacity: 1; }
-.asset-list-item .asset-delete-btn:hover { background: rgba(239,68,68,0.1); }
+.asset-list-item .asset-delete-btn:hover { background: rgba(239,68,68,0.15); }
+
+/* ---- IMAGE LIGHTBOX ---- */
+.image-lightbox {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+}
+.image-lightbox.active { display: flex; }
+.image-lightbox img {
+    max-width: 90vw;
+    max-height: 75vh;
+    object-fit: contain;
+    border-radius: 8px;
+}
+.image-lightbox .lightbox-actions {
+    display: flex;
+    gap: 1rem;
+}
+.image-lightbox .lightbox-close {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+.image-lightbox .lightbox-delete {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+/* ---- LORA QR SCANNER ---- */
+.lora-section {
+    border-top: 1px dashed var(--border);
+    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+}
+.lora-value {
+    background: var(--bg);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    color: var(--text);
+    word-break: break-all;
+    min-height: 1.2rem;
+}
+#qr-video-container {
+    display: none;
+    margin-top: 0.5rem;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+#qr-video-container video {
+    width: 100%;
+    border-radius: 8px;
+}
+#qr-video-container .qr-stop-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
 
 /* ---- IMAGE THUMBNAILS ---- */
 .image-preview-gallery {
