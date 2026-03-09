@@ -5,7 +5,7 @@
     <meta name="theme-color" content="#2563eb">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
-    <title>Spirax Digital Survey & Commisioning</title>
+    <title>Field Asset Manager</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -29,8 +29,7 @@
         <section id="view-login" class="view active">
             <div class="login-card">
                 <div class="logo-area">🏢</div>
-                <h2 style="text-align: center; margin-bottom: 0.25rem;">Digital Survey and Commisioning</h2>
-                <h3 style="text-align: center; margin-bottom: 0.25rem;">App Version 1.1</h3>
+                <h2 style="text-align: center; margin-bottom: 0.25rem;">Welcome Back</h2>
                 <p style="text-align: center; color: var(--text-light); font-size: 0.85rem; margin-bottom: 1.5rem;">Field Asset Manager</p>
                 <div class="input-group">
                     <input type="email" id="email" placeholder="Email Address">
@@ -46,8 +45,8 @@
                 <h2>Dashboard</h2>
             </div>
             <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
-                <button id="nav-create-site" class="primary-btn" style="flex:1;">+ New Site</button>
-                <button id="nav-sync-sites" class="secondary-btn" style="flex:1;">☁️ Sync Site</button>
+                <button id="nav-create-site" class="primary-btn" style="flex:1;">+ Create New Site</button>
+                <button id="nav-sync-sites" class="secondary-btn" style="flex:1;">☁️ Download from Cloud</button>
             </div>
             <h3 class="section-label">Local Offline Sites</h3>
             <ul id="local-site-list" class="styled-list"></ul>
@@ -79,12 +78,17 @@
                     <h2 id="current-site-title" style="margin: 0;">Plants</h2>
                     <p id="current-site-city" style="margin: 0; color: var(--text-light); font-size: 0.85rem;"></p>
                 </div>
-                <button id="btn-push-cloud" class="badge-btn" style="background: var(--success); color: white;">☁️ Push</button>
+                <button id="btn-push-cloud" class="badge-btn" style="background: var(--success); color: white;">☁️ Push to Cloud</button>
             </div>
-            <div class="form-card">
+            <button id="btn-toggle-add-plant" class="secondary-btn" style="margin-bottom: 0.75rem;">+ Add Plant</button>
+            <div id="add-plant-form" class="form-card" style="display: none;">
+                <h3 style="margin-top:0; font-size:1rem;">New Plant</h3>
                 <input type="text" id="new-plant-name" placeholder="Plant Name *">
                 <input type="text" id="new-plant-location" placeholder="Location Description">
-                <button id="btn-add-plant" class="secondary-btn">+ Add Plant</button>
+                <div style="display:flex; gap:0.5rem;">
+                    <button id="btn-add-plant" class="primary-btn" style="flex:1;">Save Plant</button>
+                    <button id="btn-cancel-add-plant" class="outline-btn" style="flex:1;">Cancel</button>
+                </div>
             </div>
             <div id="plant-gallery" class="gallery-grid"></div>
         </section>
@@ -126,7 +130,7 @@
                 <div class="form-group">
                     <label>GPS Location</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record</button>
+                        <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record GPS</button>
                         <span class="gps-display" style="flex:1">No GPS</span>
                         <input type="hidden" class="asset-gps-lat"><input type="hidden" class="asset-gps-lng">
                     </div>
@@ -170,10 +174,6 @@
                         <span class="lora-value" style="flex:1">No device</span>
                         <input type="hidden" class="asset-lora-info">
                     </div>
-                    <div class="qr-video-box" style="display:none; margin-top:0.5rem;">
-                        <video playsinline></video>
-                        <button class="delete-btn qr-stop-btn" style="position:absolute; top:4px; right:4px;">Stop</button>
-                    </div>
                 </div>
                 <button class="primary-btn btn-save-asset">Save Asset Locally</button>
             </div>
@@ -205,8 +205,107 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Pipe Size (mm)</label>
-                    <input type="text" class="specific-field-1" placeholder="e.g. 50">
+                    <label>Choose Pipe Size</label>
+                    <select class="specific-field-1">
+                        <option value="">-- Select Pipe Size --</option>
+                        <option value="15">DN15</option>
+                        <option value="20">DN20</option>
+                        <option value="25">DN25</option>
+                        <option value="32">DN32</option>
+                        <option value="40">DN40</option>
+                        <option value="50">DN50</option>
+                        <option value="65">DN65</option>
+                        <option value="80">DN80</option>
+                        <option value="100">DN100</option>
+                        <option value="125">DN125</option>
+                        <option value="150">DN150</option>
+                        <option value="200">DN200</option>
+                        <option value="250">DN250</option>
+                        <option value="300">DN300</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Pipe Schedule / PN Rating</label>
+                    <input type="text" class="asset-pipe-schedule" placeholder="e.g. Sch 40 / PN16">
+                </div>
+                <div class="form-group">
+                    <label>MAX Flow Rate</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="number" step="0.1" class="asset-max-flow-rate" placeholder="0.0" style="flex:1; margin-bottom:0;">
+                        <span style="background: var(--bg); padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; white-space: nowrap;">tons/h</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="color: var(--primary); font-weight: 700; text-align: center; margin-bottom: 0.5rem;">Check Mark Relevant Boxes</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" class="chk-atex-zone" value="ATEX Zone"> ATEX Zone</label>
+                        <label class="checkbox-label"><input type="checkbox" class="chk-separator" value="Separator"> Separator</label>
+                        <label class="checkbox-label"><input type="checkbox" class="chk-strainer" value="Strainer"> Strainer</label>
+                        <label class="checkbox-label"><input type="checkbox" class="chk-bypass-line" value="Bypass Line"> Bypass Line</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Isolation Type Upstream</label>
+                    <select class="asset-isolation-upstream">
+                        <option value="">-- Select (optional) --</option>
+                        <option value="Gate Valve">Gate Valve</option>
+                        <option value="Ball Valve">Ball Valve</option>
+                        <option value="Butterfly Valve">Butterfly Valve</option>
+                        <option value="Globe Valve">Globe Valve</option>
+                        <option value="None">None</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Isolation Type Downstream</label>
+                    <select class="asset-isolation-downstream">
+                        <option value="">-- Select (optional) --</option>
+                        <option value="Gate Valve">Gate Valve</option>
+                        <option value="Ball Valve">Ball Valve</option>
+                        <option value="Butterfly Valve">Butterfly Valve</option>
+                        <option value="Globe Valve">Globe Valve</option>
+                        <option value="None">None</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Power Supply Availability</label>
+                    <select class="asset-power-supply">
+                        <option value="">-- Select (optional) --</option>
+                        <option value="Available Nearby">Available Nearby</option>
+                        <option value="Not Available">Not Available</option>
+                        <option value="Battery Only">Battery Only</option>
+                        <option value="Solar">Solar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Choose Fluid</label>
+                    <select class="asset-fluid">
+                        <option value="">-- Select (optional) --</option>
+                        <option value="Steam">Steam</option>
+                        <option value="Condensate">Condensate</option>
+                        <option value="Hot Water">Hot Water</option>
+                        <option value="Chilled Water">Chilled Water</option>
+                        <option value="Compressed Air">Compressed Air</option>
+                        <option value="Thermal Oil">Thermal Oil</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>GPS Location</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record GPS</button>
+                        <span class="gps-display" style="flex:1">No GPS</span>
+                        <input type="hidden" class="asset-gps-lat"><input type="hidden" class="asset-gps-lng">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Installation Requirement</label>
+                    <select class="asset-install-req">
+                        <option value="">-- Select --</option>
+                        <option value="Easy Install">Easy Install</option>
+                        <option value="Step Ladder">Step Ladder</option>
+                        <option value="Scaffolding">Scaffolding</option>
+                        <option value="MEWP">MEWP</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Notes</label>
@@ -218,7 +317,7 @@
                     <button class="outline-btn photo-trigger-btn" onclick="this.previousElementSibling.click()" style="width:100%">📷 Take / Add Photos</button>
                     <div class="image-preview-gallery"></div>
                 </div>
-                <button class="primary-btn btn-save-asset">Save Asset</button>
+                <button class="primary-btn btn-save-asset">Save Asset Locally</button>
             </div>
         </section>
 
@@ -254,7 +353,7 @@
                 <div class="form-group">
                     <label>GPS Location</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record</button>
+                        <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record GPS</button>
                         <span class="gps-display" style="flex:1">No GPS</span>
                         <input type="hidden" class="asset-gps-lat"><input type="hidden" class="asset-gps-lng">
                     </div>
@@ -286,12 +385,8 @@
                         <span class="lora-value" style="flex:1">No device</span>
                         <input type="hidden" class="asset-lora-info">
                     </div>
-                    <div class="qr-video-box" style="display:none; margin-top:0.5rem; position:relative;">
-                        <video playsinline style="width:100%; border-radius:8px;"></video>
-                        <button class="delete-btn qr-stop-btn" style="position:absolute; top:4px; right:4px;">Stop</button>
-                    </div>
                 </div>
-                <button class="primary-btn btn-save-asset">Save Asset</button>
+                <button class="primary-btn btn-save-asset">Save Asset Locally</button>
             </div>
         </section>
 
@@ -327,7 +422,7 @@
                 <div class="form-group">
                     <label>GPS Location</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record</button>
+                        <button class="outline-btn" onclick="window.recordPreciseGPS(this)" style="flex:1">📍 Record GPS</button>
                         <span class="gps-display" style="flex:1">No GPS</span>
                         <input type="hidden" class="asset-gps-lat"><input type="hidden" class="asset-gps-lng">
                     </div>
@@ -359,12 +454,8 @@
                         <span class="lora-value" style="flex:1">No device</span>
                         <input type="hidden" class="asset-lora-info">
                     </div>
-                    <div class="qr-video-box" style="display:none; margin-top:0.5rem; position:relative;">
-                        <video playsinline style="width:100%; border-radius:8px;"></video>
-                        <button class="delete-btn qr-stop-btn" style="position:absolute; top:4px; right:4px;">Stop</button>
-                    </div>
                 </div>
-                <button class="primary-btn btn-save-asset">Save Asset</button>
+                <button class="primary-btn btn-save-asset">Save Asset Locally</button>
             </div>
         </section>
 
@@ -377,6 +468,20 @@
             <button class="lightbox-delete" id="lightbox-delete-btn">🗑️ Delete Image</button>
             <button class="lightbox-close" id="lightbox-close-btn">✕ Close</button>
         </div>
+    </div>
+
+    <!-- QR SCANNER FULL-SCREEN OVERLAY -->
+    <div id="qr-fullscreen-overlay" class="qr-fullscreen-overlay">
+        <div class="qr-overlay-header">
+            <h3>Scan QR Code</h3>
+            <button id="qr-overlay-close" class="outline-btn" style="color:white; border-color:white; padding:0.4rem 0.8rem;">✕ Close</button>
+        </div>
+        <div class="qr-viewfinder">
+            <video id="qr-fullscreen-video" playsinline autoplay></video>
+            <div class="qr-scan-line"></div>
+        </div>
+        <p class="qr-hint">Point your camera at a QR code</p>
+        <button id="qr-manual-entry-btn" class="outline-btn" style="color:white; border-color:white; margin-top:1rem;">✏️ Enter Manually Instead</button>
     </div>
 
     <script type="module" src="app.js"></script>
