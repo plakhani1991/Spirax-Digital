@@ -195,13 +195,11 @@
                     <input type="text" class="asset-model" placeholder="Model / Serial">
                 </div>
                 <div class="form-group">
-                    <label>Condition</label>
+                    <label>Connection Type</label>
                     <select class="asset-condition">
                         <option value="">-- Select --</option>
-                        <option value="New">New</option>
-                        <option value="Good">Good</option>
-                        <option value="Fair">Fair</option>
-                        <option value="Poor">Poor</option>
+                        <option value="RTU">Modbus RTU</option>
+                        <option value="IP">Modbus IP</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -248,22 +246,20 @@
                     <label>Isolation Type Upstream</label>
                     <select class="asset-isolation-upstream">
                         <option value="">-- Select (optional) --</option>
-                        <option value="Gate Valve">Gate Valve</option>
-                        <option value="Ball Valve">Ball Valve</option>
-                        <option value="Butterfly Valve">Butterfly Valve</option>
-                        <option value="Globe Valve">Globe Valve</option>
-                        <option value="None">None</option>
+                        <option value="No Isolation">No Isolation</option>
+                        <option value="Single">Single Isolation</option>
+                        <option value="Double">Double Isolation</option>
+                        <option value="Unknown">Unknown</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Isolation Type Downstream</label>
                     <select class="asset-isolation-downstream">
                         <option value="">-- Select (optional) --</option>
-                        <option value="Gate Valve">Gate Valve</option>
-                        <option value="Ball Valve">Ball Valve</option>
-                        <option value="Butterfly Valve">Butterfly Valve</option>
-                        <option value="Globe Valve">Globe Valve</option>
-                        <option value="None">None</option>
+                        <option value="No Isolation">No Isolation</option>
+                        <option value="Single">Single Isolation</option>
+                        <option value="Double">Double Isolation</option>
+                        <option value="Unknown">Unknown</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -271,9 +267,10 @@
                     <select class="asset-power-supply">
                         <option value="">-- Select (optional) --</option>
                         <option value="Available Nearby">Available Nearby</option>
-                        <option value="Not Available">Not Available</option>
-                        <option value="Battery Only">Battery Only</option>
-                        <option value="Solar">Solar</option>
+                        <option value="AC Mains">AC Mains</option>
+                        <option value="DC 12V">DC 12V</option>
+                        <option value="DC 24V">DC 24V</option>
+                        <option value="DC 48V">DC 48V</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -281,11 +278,8 @@
                     <select class="asset-fluid">
                         <option value="">-- Select (optional) --</option>
                         <option value="Steam">Steam</option>
-                        <option value="Condensate">Condensate</option>
-                        <option value="Hot Water">Hot Water</option>
-                        <option value="Chilled Water">Chilled Water</option>
-                        <option value="Compressed Air">Compressed Air</option>
-                        <option value="Thermal Oil">Thermal Oil</option>
+                        <option value="Water">Water</option>
+                        <option value="Natural Gas">Natural Gas</option>
                         <option value="Other">Other</option>
                     </select>
                 </div>
