@@ -214,7 +214,7 @@ function renderHome() {
     list.innerHTML = '';
 
     if (Object.keys(localDB).length === 0) {
-        list.innerHTML = '<li class="empty-msg">No local sites. Create one or sync from cloud.</li>';
+        list.innerHTML = '<li class="empty-msg">No local sites. Create one or download from cloud.</li>';
     } else {
         for (const siteId in localDB) {
             const site = localDB[siteId];
@@ -224,8 +224,8 @@ function renderHome() {
                     <strong>${site.name}</strong><br><small>${site.city}</small>
                 </div>
                 <div class="list-actions">
-                    <button class="outline-btn" onclick="event.stopPropagation(); window.syncLocalSite('${site.name}', '${site.city}')" style="font-size:0.8rem; padding:0.4rem 0.6rem;">⬇️</button>
-                    <button class="delete-btn" onclick="event.stopPropagation(); window.hideLocalSite('${siteId}')">🗑️</button>
+                    <button class="sync-site-btn" onclick="event.stopPropagation(); window.syncLocalSite('${site.name}', '${site.city}')">🔄 Sync</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); window.hideLocalSite('${siteId}')">🗑️ Delete</button>
                 </div>
             `;
             list.appendChild(li);
@@ -284,7 +284,7 @@ window.hideLocalSite = function(siteId) {
 };
 
 window.syncLocalSite = async function(name, city) {
-    setSyncProgress(20, "Fetching updates...");
+    setSyncProgress(20, "Fetching latest from cloud...");
     const res = await callAPI('downloadSiteData', { siteName: name, siteCity: city });
     if (res.status === 'success') {
         const siteId = `${name}_${city}`.replace(/\s+/g, '');
@@ -298,7 +298,7 @@ window.syncLocalSite = async function(name, city) {
 
         let assetCount = 0;
         Object.values(cleanData.plants).forEach(p => assetCount += p.assets.length);
-        setSyncProgress(100, `Successfully synced ${assetCount} assets!`);
+        setSyncProgress(100, `Synced ${assetCount} assets successfully!`);
 
         localDB[siteId] = cleanData;
         saveLocalDB();
@@ -322,7 +322,7 @@ document.getElementById('btn-save-new-site').onclick = async () => {
     const res = await callAPI('createSite', { siteName: name, siteCity: city });
 
     if (res.status === 'success') {
-        setSyncProgress(100, "Done!");
+        setSyncProgress(100, "Site created!");
         const siteId = `${name}_${city}`.replace(/\s+/g, '');
         localDB[siteId] = res.siteData;
         saveLocalDB();
@@ -336,7 +336,7 @@ document.getElementById('btn-save-new-site').onclick = async () => {
 // --- SYNC EXISTING SITES ---
 async function loadCloudSites() {
     showView('view-sync-sites');
-    setSyncProgress(50, "Loading cloud list...");
+    setSyncProgress(50, "Loading cloud sites...");
     const list = document.getElementById('cloud-site-list');
     list.innerHTML = '';
 
@@ -364,6 +364,9 @@ function renderPlants() {
     gallery.innerHTML = '';
     const plants = localDB[activeSiteId].plants;
 
+    // Hide add plant form when rendering
+    document.getElementById('add-plant-form').style.display = 'none';
+
     if (Object.keys(plants).length === 0) {
         gallery.innerHTML = '<p style="text-align:center; color:var(--text-light); padding:2rem 0;">No plants yet. Add one above.</p>';
         return;
@@ -384,7 +387,22 @@ function renderPlants() {
     }
 }
 
-// --- ADD PLANT (with Name + Location) ---
+// --- ADD PLANT TOGGLE ---
+document.getElementById('btn-toggle-add-plant').onclick = () => {
+    const form = document.getElementById('add-plant-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    if (form.style.display === 'block') {
+        document.getElementById('new-plant-name').value = '';
+        document.getElementById('new-plant-location').value = '';
+        document.getElementById('new-plant-name').focus();
+    }
+};
+
+document.getElementById('btn-cancel-add-plant').onclick = () => {
+    document.getElementById('add-plant-form').style.display = 'none';
+};
+
+// --- ADD PLANT ---
 document.getElementById('btn-add-plant').onclick = () => {
     const name = document.getElementById('new-plant-name').value;
     const location = document.getElementById('new-plant-location').value;
@@ -394,6 +412,7 @@ document.getElementById('btn-add-plant').onclick = () => {
     saveLocalDB();
     document.getElementById('new-plant-name').value = '';
     document.getElementById('new-plant-location').value = '';
+    document.getElementById('add-plant-form').style.display = 'none';
     renderPlants();
 };
 
@@ -441,12 +460,12 @@ document.getElementById('btn-push-cloud').onclick = async () => {
     let assetCount = 0;
     Object.values(localCopy.plants).forEach(p => assetCount += p.assets.length);
 
-    setSyncProgress(50, `Pushing ${assetCount} assets & merging...`);
+    setSyncProgress(50, `Pushing ${assetCount} assets to cloud...`);
 
     const res = await callAPI('pushSiteData', { siteName: site.name, siteCity: site.city, siteData: localCopy });
 
     if (res.status === 'success') {
-        setSyncProgress(100, "Merge Successful!");
+        setSyncProgress(100, "Push successful! Data merged.");
 
         // Apply local deletions to returned cloud data too
         let returnedData = res.data;
@@ -493,7 +512,7 @@ function renderAssets() {
                 <strong>${asset.name} <span style="font-weight:400; color:var(--text-light); font-size:0.8rem;">(${asset.type || 'Asset'})</span></strong>
                 <br><small>${asset.condition || 'N/A'} | ${asset.model || 'No model'}</small>
             </div>
-            <button class="asset-delete-btn" onclick="event.stopPropagation(); window.deleteAsset('${asset.id}')">🗑️</button>
+            <button class="asset-delete-btn" onclick="event.stopPropagation(); window.deleteAsset('${asset.id}')">🗑️ Delete</button>
         `;
         list.appendChild(div);
     });
@@ -544,10 +563,12 @@ function openSpecificForm(type, asset) {
     if (photoInp) photoInp.value = '';
 
     // Reset all inputs
-    viewElement.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(inp => {
+    viewElement.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]), textarea, select').forEach(inp => {
         if (inp.type === 'file') return;
         inp.value = '';
     });
+    // Reset checkboxes
+    viewElement.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
 
     if (asset) {
         viewElement.querySelector('.form-title').innerText = `Edit ${type}`;
@@ -578,6 +599,32 @@ function openSpecificForm(type, asset) {
         if (lngInp) lngInp.value = asset.lng || '';
         if (gpsDisplay) gpsDisplay.innerText = asset.lat ? `${asset.lat}, ${asset.lng}` : 'No GPS data';
 
+        // Flow Meter specific fields
+        if (viewElement.querySelector('.asset-pipe-schedule'))
+            viewElement.querySelector('.asset-pipe-schedule').value = asset.pipeSchedule || '';
+        if (viewElement.querySelector('.asset-max-flow-rate'))
+            viewElement.querySelector('.asset-max-flow-rate').value = asset.maxFlowRate || '';
+        if (viewElement.querySelector('.asset-isolation-upstream'))
+            viewElement.querySelector('.asset-isolation-upstream').value = asset.isolationUpstream || '';
+        if (viewElement.querySelector('.asset-isolation-downstream'))
+            viewElement.querySelector('.asset-isolation-downstream').value = asset.isolationDownstream || '';
+        if (viewElement.querySelector('.asset-power-supply'))
+            viewElement.querySelector('.asset-power-supply').value = asset.powerSupply || '';
+        if (viewElement.querySelector('.asset-fluid'))
+            viewElement.querySelector('.asset-fluid').value = asset.fluid || '';
+
+        // Checkboxes
+        if (asset.checkboxes) {
+            if (viewElement.querySelector('.chk-atex-zone'))
+                viewElement.querySelector('.chk-atex-zone').checked = asset.checkboxes.includes('ATEX Zone');
+            if (viewElement.querySelector('.chk-separator'))
+                viewElement.querySelector('.chk-separator').checked = asset.checkboxes.includes('Separator');
+            if (viewElement.querySelector('.chk-strainer'))
+                viewElement.querySelector('.chk-strainer').checked = asset.checkboxes.includes('Strainer');
+            if (viewElement.querySelector('.chk-bypass-line'))
+                viewElement.querySelector('.chk-bypass-line').checked = asset.checkboxes.includes('Bypass Line');
+        }
+
         currentExistingImageRefs = asset.imageRefs ? [...asset.imageRefs] : [];
         currentAssetImages = asset.localImages ? [...asset.localImages] : [];
 
@@ -605,6 +652,10 @@ document.querySelectorAll('.btn-save-asset').forEach(btn => {
             return alert("Asset Name is required.");
         }
 
+        // Collect checkboxes
+        const checkedBoxes = [];
+        view.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => checkedBoxes.push(cb.value));
+
         const assetObj = {
             id: view.querySelector('.asset-id')?.value || generateId(),
             type: view.querySelector('.asset-type')?.value || 'Asset',
@@ -621,6 +672,13 @@ document.querySelectorAll('.btn-save-asset').forEach(btn => {
             lng: view.querySelector('.asset-gps-lng')?.value || '',
             installationRequirement: view.querySelector('.asset-install-req')?.value || '',
             loraInfo: view.querySelector('.asset-lora-info')?.value || '',
+            pipeSchedule: view.querySelector('.asset-pipe-schedule')?.value || '',
+            maxFlowRate: view.querySelector('.asset-max-flow-rate')?.value || '',
+            isolationUpstream: view.querySelector('.asset-isolation-upstream')?.value || '',
+            isolationDownstream: view.querySelector('.asset-isolation-downstream')?.value || '',
+            powerSupply: view.querySelector('.asset-power-supply')?.value || '',
+            fluid: view.querySelector('.asset-fluid')?.value || '',
+            checkboxes: checkedBoxes.length > 0 ? checkedBoxes : null,
             imageRefs: currentExistingImageRefs,
             localImages: currentAssetImages.length > 0 ? [...currentAssetImages] : null
         };
@@ -632,7 +690,7 @@ document.querySelectorAll('.btn-save-asset').forEach(btn => {
             // SMART MERGE: Don't overwrite existing non-blank fields with blank
             const existing = assetsArray[existingIndex];
             for (const key of Object.keys(assetObj)) {
-                if (key === 'imageRefs' || key === 'localImages' || key === 'id' || key === 'type') continue;
+                if (key === 'imageRefs' || key === 'localImages' || key === 'id' || key === 'type' || key === 'checkboxes') continue;
                 if (assetObj[key] === '' || assetObj[key] === null || assetObj[key] === undefined) {
                     assetObj[key] = existing[key]; // Keep existing value
                 }
@@ -736,70 +794,87 @@ function renderImagePreviews(viewElement) {
     });
 }
 
-// --- QR CODE SCANNER (uses camera + BarcodeDetector API) ---
+// --- QR CODE SCANNER (FULL-SCREEN OVERLAY) ---
 let activeQRStream = null;
+let activeQRScanInterval = null;
+let qrTargetView = null;
 
-document.querySelectorAll('.btn-scan-qr').forEach(btn => {
-    btn.onclick = async () => {
-        const view = btn.closest('.view');
-        const videoBox = view.querySelector('.qr-video-box');
-        const video = videoBox.querySelector('video');
-        const loraDisplay = view.querySelector('.lora-value');
-        const loraInput = view.querySelector('.asset-lora-info');
-        const stopBtn = videoBox.querySelector('.qr-stop-btn');
+function openQRScanner(viewElement) {
+    qrTargetView = viewElement;
+    const overlay = document.getElementById('qr-fullscreen-overlay');
+    const video = document.getElementById('qr-fullscreen-video');
 
-        // Check if BarcodeDetector is available
-        if (!('BarcodeDetector' in window)) {
-            // Fallback: manual text entry
-            const val = prompt("QR Scanner not supported on this device.\nEnter LoRa Device ID manually:");
-            if (val) {
-                loraInput.value = val;
-                loraDisplay.innerText = val;
-            }
-            return;
+    // Check if BarcodeDetector is available
+    if (!('BarcodeDetector' in window)) {
+        const val = prompt("QR Scanner not supported on this device.\nEnter LoRa Device ID manually:");
+        if (val) {
+            const loraInput = viewElement.querySelector('.asset-lora-info');
+            const loraDisplay = viewElement.querySelector('.lora-value');
+            if (loraInput) loraInput.value = val;
+            if (loraDisplay) { loraDisplay.innerText = val; loraDisplay.style.color = '#22c55e'; }
         }
+        return;
+    }
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    overlay.classList.add('active');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
             activeQRStream = stream;
             video.srcObject = stream;
             video.play();
-            videoBox.style.display = 'block';
 
             const detector = new BarcodeDetector({ formats: ['qr_code'] });
 
-            const scanInterval = setInterval(async () => {
+            activeQRScanInterval = setInterval(async () => {
                 try {
                     const barcodes = await detector.detect(video);
                     if (barcodes.length > 0) {
                         const value = barcodes[0].rawValue;
-                        loraInput.value = value;
-                        loraDisplay.innerText = value;
-                        loraDisplay.style.color = '#22c55e';
-                        clearInterval(scanInterval);
-                        stopQRStream(video, videoBox);
+                        const loraInput = qrTargetView.querySelector('.asset-lora-info');
+                        const loraDisplay = qrTargetView.querySelector('.lora-value');
+                        if (loraInput) loraInput.value = value;
+                        if (loraDisplay) { loraDisplay.innerText = value; loraDisplay.style.color = '#22c55e'; }
+                        closeQRScanner();
                     }
                 } catch { /* frame not ready */ }
             }, 300);
-
-            stopBtn.onclick = () => {
-                clearInterval(scanInterval);
-                stopQRStream(video, videoBox);
-            };
-        } catch (err) {
+        })
+        .catch(err => {
             alert("Camera error: " + err.message);
-        }
+            closeQRScanner();
+        });
+}
+
+function closeQRScanner() {
+    const overlay = document.getElementById('qr-fullscreen-overlay');
+    const video = document.getElementById('qr-fullscreen-video');
+
+    if (activeQRScanInterval) { clearInterval(activeQRScanInterval); activeQRScanInterval = null; }
+    if (activeQRStream) { activeQRStream.getTracks().forEach(t => t.stop()); activeQRStream = null; }
+    video.srcObject = null;
+    overlay.classList.remove('active');
+}
+
+document.getElementById('qr-overlay-close').onclick = closeQRScanner;
+
+document.getElementById('qr-manual-entry-btn').onclick = () => {
+    closeQRScanner();
+    const val = prompt("Enter LoRa Device ID manually:");
+    if (val && qrTargetView) {
+        const loraInput = qrTargetView.querySelector('.asset-lora-info');
+        const loraDisplay = qrTargetView.querySelector('.lora-value');
+        if (loraInput) loraInput.value = val;
+        if (loraDisplay) { loraDisplay.innerText = val; loraDisplay.style.color = '#22c55e'; }
+    }
+};
+
+document.querySelectorAll('.btn-scan-qr').forEach(btn => {
+    btn.onclick = () => {
+        const view = btn.closest('.view');
+        openQRScanner(view);
     };
 });
-
-function stopQRStream(video, videoBox) {
-    if (activeQRStream) {
-        activeQRStream.getTracks().forEach(t => t.stop());
-        activeQRStream = null;
-    }
-    video.srcObject = null;
-    videoBox.style.display = 'none';
-}
 
 function compressImage(file, maxWidth, quality) {
     return new Promise((resolve) => {
